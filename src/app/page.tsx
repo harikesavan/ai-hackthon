@@ -324,7 +324,7 @@ export default function Home() {
 
   const handleAvailabilityChange = (
     key: keyof MapState["availability"],
-    value: boolean | "full-time" | "part-time",
+    value: boolean,
   ) => {
     setSelectedFacilityId(null);
     setMapState((previous) => ({
@@ -393,6 +393,8 @@ export default function Home() {
       />
       <MapView
         facilities={filteredFacilities}
+        allFacilities={facilities}
+        location={mapState.location}
         capability={mapState.capability}
         isDarkMode={isDarkMode}
         selectedFacilityId={selectedFacilityId}

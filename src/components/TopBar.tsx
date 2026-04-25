@@ -11,10 +11,7 @@ type TopBarProps = {
   onCapabilityChange: (capability: MapState["capability"]) => void;
   onLocationChange: (key: keyof MapState["location"], value: string) => void;
   onTrustChange: (trust: number) => void;
-  onAvailabilityChange: (
-    key: keyof MapState["availability"],
-    value: boolean | "full-time" | "part-time",
-  ) => void;
+  onAvailabilityChange: (key: keyof MapState["availability"], value: boolean) => void;
   onThemeToggle: () => void;
 };
 
@@ -95,20 +92,6 @@ export const TopBar = ({
             </select>
           </label>
 
-          <label className={labelClassName}>
-            Trust {state.trustMin}%
-            <input
-              aria-label="Set trust threshold"
-              className="h-8 w-full accent-cyan-500"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={state.trustMin}
-              onChange={(event) => onTrustChange(Number(event.target.value))}
-            />
-          </label>
-
           <div className={labelClassName}>
             Schedule
             <label
@@ -130,45 +113,19 @@ export const TopBar = ({
             </label>
           </div>
 
-          <div className={labelClassName}>
-            Staffing
-            <div
-              className={
-                isDarkMode
-                    ? "flex h-8 w-full rounded-md border border-white/15 bg-slate-800/90 p-0.5"
-                    : "flex h-8 w-full rounded-md border border-slate-300 bg-white p-0.5"
-              }
-            >
-              <button
-                aria-label="Show full-time staff facilities"
-                className={
-                  state.availability.staffing === "full-time"
-                    ? "flex-1 rounded px-2 text-xs normal-case tracking-normal bg-cyan-500 text-slate-950"
-                    : isDarkMode
-                      ? "flex-1 rounded px-2 text-xs normal-case tracking-normal text-slate-200 hover:bg-slate-700"
-                      : "flex-1 rounded px-2 text-xs normal-case tracking-normal text-slate-700 hover:bg-slate-100"
-                }
-                onClick={() => onAvailabilityChange("staffing", "full-time")}
-                type="button"
-              >
-                Full-time
-              </button>
-              <button
-                aria-label="Show part-time staff facilities"
-                className={
-                  state.availability.staffing === "part-time"
-                    ? "flex-1 rounded px-2 text-xs normal-case tracking-normal bg-cyan-500 text-slate-950"
-                    : isDarkMode
-                      ? "flex-1 rounded px-2 text-xs normal-case tracking-normal text-slate-200 hover:bg-slate-700"
-                      : "flex-1 rounded px-2 text-xs normal-case tracking-normal text-slate-700 hover:bg-slate-100"
-                }
-                onClick={() => onAvailabilityChange("staffing", "part-time")}
-                type="button"
-              >
-                Part-time
-              </button>
-            </div>
-          </div>
+          <label className={labelClassName}>
+            Trust {state.trustMin}%
+            <input
+              aria-label="Set trust threshold"
+              className="h-8 w-full accent-cyan-500"
+              type="range"
+              min={0}
+              max={100}
+              step={10}
+              value={state.trustMin}
+              onChange={(event) => onTrustChange(Number(event.target.value))}
+            />
+          </label>
 
           <button
             aria-label="Toggle dark mode"

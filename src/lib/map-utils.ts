@@ -47,12 +47,6 @@ export const parseQueryToState = (query: string): Partial<MapState> => {
   if (normalized.includes("24/7") || normalized.includes("open")) {
     parsedAvailability.open247 = true;
   }
-  if (normalized.includes("full-time") || normalized.includes("full time")) {
-    parsedAvailability.staffing = "full-time";
-  }
-  if (normalized.includes("part-time") || normalized.includes("part time")) {
-    parsedAvailability.staffing = "part-time";
-  }
   if (Object.keys(parsedAvailability).length > 0) {
     parsedState.availability = parsedAvailability as MapState["availability"];
   }
@@ -78,9 +72,6 @@ export const getParsedSummary = (state: MapState): string => {
     state.location.state !== "All" ? state.location.state : "Any state",
     `Trust > ${state.trustMin}%`,
     state.availability.open247 ? "Open 24/7" : "Any schedule",
-    state.availability.staffing === "full-time"
-      ? "Full-time staff"
-      : "Part-time staff",
   ].join(" | ");
 };
 
@@ -108,18 +99,6 @@ export const filterFacilities = (
       return false;
     }
     if (state.availability.open247 && !facility.open247) {
-      return false;
-    }
-    if (
-      state.availability.staffing === "full-time" &&
-      !facility.fullTimeStaffOnly
-    ) {
-      return false;
-    }
-    if (
-      state.availability.staffing === "part-time" &&
-      facility.fullTimeStaffOnly
-    ) {
       return false;
     }
     return true;

@@ -2,18 +2,29 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+function createDb() {
+  const client = postgres(process.env.DATABASE_URL!);
+  return drizzle(client, { schema });
+}
 
-export function getDb() {
+type DbType = ReturnType<typeof createDb>;
+
+let _db: DbType | undefined;
+
+export function getDb(): DbType {
   if (!_db) {
-    const client = postgres(process.env.DATABASE_URL!);
-    _db = drizzle(client, { schema });
+    _db = createDb();
   }
   return _db;
 }
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
-  get(_, prop) {
-    return (getDb() as Record<string | symbol, unknown>)[prop];
+export const db = new Proxy({} as DbType, {
+  get(_, prop: string | symbol) {
+    const instance = getDb();
+    const value = instance[prop as keyof DbType];
+    if (typeof value === "function") {
+      return value.bind(instance);
+    }
+    return value;
   },
 });

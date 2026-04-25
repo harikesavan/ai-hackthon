@@ -1,0 +1,6 @@
+openai
+pandas
+openpyxl
+psycopg2-binary
+python-dotenv
+pgeocode

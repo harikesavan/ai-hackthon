@@ -157,7 +157,7 @@ _agent = None
 def get_agent():
     global _agent
     if _agent is None:
-        llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
         _agent = create_react_agent(llm, tools)
     return _agent
 
@@ -176,10 +176,25 @@ async def health():
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
+@app.get("/test-query")
+async def test_query():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id, facility_name, facility_type, state, trust_min FROM facilities WHERE state ILIKE '%Rajasthan%' AND specialties::text ILIKE '%cardio%' ORDER BY trust_min ASC LIMIT 3")
+        results = cur.fetchall()
+        conn.close()
+        return {"status": "ok", "results": results}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+
 @app.post("/query")
 async def run_query(req: QueryRequest):
+    import sys
+    print(f"[QUERY] Received: {req.message}", flush=True, file=sys.stderr)
     try:
         agent_executor = get_agent()
+        print("[QUERY] Agent initialized, invoking...", flush=True, file=sys.stderr)
         response = agent_executor.invoke({
             "messages": [
                 SystemMessage(content=system_prompt),

@@ -1,0 +1,67 @@
+{
+  "query": "I need a hospital near Patna for an emergency C-section",
+  "recommendation": {
+    "facilityId": 15813,
+    "name": "Al-Shifa Surgical & Maternity Hospital",
+    "type": "Hospital",
+    "district": "Bihar Sharif",
+    "state": "Bihar",
+    "lat": 25.202965,
+    "lon": 85.52953,
+    "trustMin": 0.9,
+    "reason": "Surgical and maternity hospital with consistent data. Dedicated maternity services."
+  },
+  "reasoning": [
+    {
+      "step": "search",
+      "text": "Forty-seven facilities in Bihar claim obstetric or gynecology services. Checking each one.",
+      "delay": 400
+    },
+    {
+      "step": "filter",
+      "text": "Narrowing to hospitals with trust score above 0.5 near the Patna area...",
+      "delay": 600
+    },
+    {
+      "step": "warning",
+      "text": "⚠ Shree Pradhan Hospital in Muzaffarpur.",
+      "delay": 1200,
+      "highlight": {"type": "red", "facilityId": 24112, "lat": 26.105175, "lon": 85.3706}
+    },
+    {
+      "step": "warning",
+      "text": "Claims obstetric services but lists zero doctors and zero equipment. A hospital with no doctors on record cannot safely deliver a baby, let alone perform a C-section.",
+      "delay": 1500
+    },
+    {
+      "step": "warning",
+      "text": "⚠ Sarthak Medical Hall also appeared in results — this is a pharmacy. It should not appear in obstetric searches but it lists medical specialties. Ignoring.",
+      "delay": 800
+    },
+    {
+      "step": "recommend",
+      "text": "✓ Al-Shifa Surgical & Maternity Hospital in Bihar Sharif. Dedicated surgical and maternity facility. Trust: 0.9.",
+      "delay": 1000,
+      "highlight": {"type": "green", "facilityId": 15813, "lat": 25.202965, "lon": 85.52953}
+    },
+    {
+      "step": "human",
+      "text": "For a woman in labor with complications, being sent to a hospital with zero doctors means losing time she does not have. Al-Shifa is the safest call.",
+      "delay": 1200
+    }
+  ],
+  "warnings": [
+    {
+      "facilityId": 24112,
+      "name": "Shree Pradhan Hospital",
+      "trustMin": 0.25,
+      "reason": "Claims obstetric services but lists 0 doctors and 0 equipment"
+    }
+  ],
+  "mapState": {
+    "center": [85.52953, 25.202965],
+    "zoom": 9,
+    "highlightGreen": [15813],
+    "highlightRed": [24112]
+  }
+}

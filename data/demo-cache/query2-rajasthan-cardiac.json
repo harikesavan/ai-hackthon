@@ -1,0 +1,74 @@
+{
+  "query": "Where can I send a cardiac patient in Rajasthan?",
+  "recommendation": {
+    "facilityId": 17508,
+    "name": "City Heart and Critical Care Center",
+    "type": "Hospital",
+    "district": "Kota",
+    "state": "Rajasthan",
+    "lat": 25.131048,
+    "lon": 75.8573,
+    "trustMin": 0.9,
+    "reason": "Dedicated heart and critical care hospital. Name and specialties are consistent. Trust: 0.9."
+  },
+  "reasoning": [
+    {
+      "step": "search",
+      "text": "Twenty-four facilities in Rajasthan claim cardiac specialties. Let me check each one.",
+      "delay": 400
+    },
+    {
+      "step": "filter",
+      "text": "Cross-referencing each facility's type, equipment list, and doctor count against what they claim...",
+      "delay": 600
+    },
+    {
+      "step": "warning",
+      "text": "⚠ Krishna Homeopathy Research Hospital in Jaipur.",
+      "delay": 1200,
+      "highlight": {"type": "red", "facilityId": 22107, "lat": 26.902159, "lon": 75.737976}
+    },
+    {
+      "step": "warning",
+      "text": "This is a homeopathy clinic. It claims cardiology, nephrology, urology, and plastic surgery. One doctor. Zero equipment. These specialties require catheterization labs, ICU beds, and surgical teams — none of which exist here.",
+      "delay": 1500
+    },
+    {
+      "step": "warning",
+      "text": "⚠ Akris Homeopathy, also in Jaipur — claims colorectal surgery. Same pattern. Homeopathy clinic, no equipment.",
+      "delay": 800,
+      "highlight": {"type": "red", "facilityId": 15734, "lat": 26.90478, "lon": 75.836655}
+    },
+    {
+      "step": "recommend",
+      "text": "✓ City Heart and Critical Care Center in Kota. Dedicated cardiac hospital. Trust score: 0.9. The name, type, and claimed specialties are consistent.",
+      "delay": 1000,
+      "highlight": {"type": "green", "facilityId": 17508, "lat": 25.131048, "lon": 75.8573}
+    },
+    {
+      "step": "human",
+      "text": "A family searching for cardiac care in Jaipur could find the homeopathy clinic on Google. It looks real. They would drive there. And they would lose hours they cannot afford to lose.",
+      "delay": 1200
+    }
+  ],
+  "warnings": [
+    {
+      "facilityId": 22107,
+      "name": "Krishna Homeopathy Research Hospital",
+      "trustMin": 0.25,
+      "reason": "Homeopathy clinic claiming cardiology, nephrology, urology, and surgery with 1 doctor and zero equipment"
+    },
+    {
+      "facilityId": 15734,
+      "name": "Akris Homeopathy",
+      "trustMin": 0.4,
+      "reason": "Homeopathy clinic claiming colorectal surgery with no equipment"
+    }
+  ],
+  "mapState": {
+    "center": [75.8573, 25.131048],
+    "zoom": 7,
+    "highlightGreen": [17508],
+    "highlightRed": [22107, 15734]
+  }
+}

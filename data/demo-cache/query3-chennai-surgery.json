@@ -1,0 +1,67 @@
+{
+  "query": "Find a surgery facility in Chennai",
+  "recommendation": {
+    "facilityId": 15308,
+    "name": "Aadhaar Hospital",
+    "type": "Hospital",
+    "district": "Tirupur",
+    "state": "Tamil Nadu",
+    "lat": 11.111446,
+    "lon": 77.338356,
+    "trustMin": 0.9,
+    "reason": "Hospital with consistent data. Trust: 0.9."
+  },
+  "reasoning": [
+    {
+      "step": "search",
+      "text": "Thirty-eight facilities in Tamil Nadu claim surgical specialties. Checking each one against their actual data.",
+      "delay": 400
+    },
+    {
+      "step": "filter",
+      "text": "Comparing each facility's type, equipment, and description against their surgical claims...",
+      "delay": 600
+    },
+    {
+      "step": "warning",
+      "text": "⚠ KP Care Centre in Chennai.",
+      "delay": 1200,
+      "highlight": {"type": "red", "facilityId": 22079, "lat": 13.088874, "lon": 80.21016}
+    },
+    {
+      "step": "warning",
+      "text": "Claims orthopedic surgery and oral surgery. But its own description says: \"your Dental health and Bone joint health is our priority.\" This is a dental clinic. It lists zero equipment. One doctor.",
+      "delay": 1500
+    },
+    {
+      "step": "warning",
+      "text": "A patient searching Google for surgery in Chennai would find this facility. It looks like it offers orthopedic surgery. It does not.",
+      "delay": 1000
+    },
+    {
+      "step": "recommend",
+      "text": "✓ Aadhaar Hospital in Tirupur. Verified hospital. Trust: 0.9. Consistent data across all fields.",
+      "delay": 1000,
+      "highlight": {"type": "green", "facilityId": 15308, "lat": 11.111446, "lon": 77.338356}
+    },
+    {
+      "step": "human",
+      "text": "The difference between finding KP Care Centre and finding Aadhaar Hospital could be the difference between a wasted trip and a successful surgery.",
+      "delay": 1200
+    }
+  ],
+  "warnings": [
+    {
+      "facilityId": 22079,
+      "name": "KP Care Centre",
+      "trustMin": 0.0,
+      "reason": "Dental clinic claiming orthopedic surgery. Description says 'Dental health is our priority.' Zero equipment."
+    }
+  ],
+  "mapState": {
+    "center": [80.21016, 13.088874],
+    "zoom": 10,
+    "highlightGreen": [15308],
+    "highlightRed": [22079]
+  }
+}

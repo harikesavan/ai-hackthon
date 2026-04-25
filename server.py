@@ -22,12 +22,14 @@ def get_db_connection():
     return psycopg2.connect(url)
 
 @tool
-def search_facilities(state: str, specialty: str, facility_type: str = "", min_trust: float = 0.0, limit: int = 20) -> list:
-    """Search facilities by location and specialty."""
+def search_facilities(state: str, specialty: str, facility_type: str = "", min_trust: float = 0.0, limit: int = 10) -> list:
+    """Search facilities by location and specialty. Returns id, name, type, district, lat, lon, trust_min, rule_violations, specialties."""
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            query = "SELECT * FROM facilities WHERE state ILIKE %s AND specialties::text ILIKE %s AND trust_min >= %s"
+            query = """SELECT id, facility_name, facility_type, district, state, lat, lon, 
+                       trust_min, rule_violations, specialties, doctors, beds, equipment
+                       FROM facilities WHERE state ILIKE %s AND specialties::text ILIKE %s AND trust_min >= %s"""
             params = [f"%{state}%", f"%{specialty}%", min_trust]
             
             if facility_type:
@@ -128,26 +130,21 @@ def submit_final_answer(
 
 tools = [search_facilities, get_facility, find_nearby, find_alternative, get_stats, submit_final_answer]
 
-system_prompt = """You are a healthcare facility advisor for NGOs in India.
-Database: 10,000 facilities with trust scores.
+system_prompt = """You are a healthcare facility advisor. You MUST follow this exact sequence:
 
-IMPORTANT: Be fast. Use at most 2 tool calls total, then submit_final_answer.
+STEP 1: Call search_facilities with the user's state and specialty. Use limit=10.
+STEP 2: Immediately call submit_final_answer. Do NOT call any other tools.
 
-Steps:
-1. Call search_facilities ONCE to find matching facilities
-2. Look at the results — pick the best (highest trust) and worst (lowest trust)
-3. Call submit_final_answer immediately with your recommendation and warnings
+For submit_final_answer:
+- recommendation_facility_id: ID of the facility with the HIGHEST trust_min
+- recommendation_name: its name
+- recommendation_lat/lon: its coordinates  
+- recommendation_trust: its trust_min value
+- recommendation_reason: one sentence why it's the best choice
+- warnings: list of facilities with trust_min < 0.5, each with facilityId, name, lat, lon, trustMin, reason
+- reasoning: list of steps you took, each with step ("search"/"warning"/"recommend"/"human") and text
 
-Do NOT call get_facility, find_nearby, or find_alternative unless absolutely necessary.
-Do NOT make more than 2 tool calls before submitting your answer.
-
-In your reasoning, explain:
-- What you searched for
-- Which facility you recommend and why (cite trust score)
-- Which facilities are suspicious and why (cite specific rule violations from the data)
-- What's at stake for the patient
-
-Be direct. Name the best option. Warn about bad ones.
+CRITICAL: You must call submit_final_answer after search_facilities. Only 2 tool calls total.
 """
 
 _agent = None
@@ -155,7 +152,7 @@ _agent = None
 def get_agent():
     global _agent
     if _agent is None:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
+        llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
         _agent = create_react_agent(llm, tools)
     return _agent
 
@@ -198,7 +195,7 @@ async def run_query(req: QueryRequest):
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=req.message)
             ]},
-            {"recursion_limit": 8}
+            {"recursion_limit": 12}
         )
 
         final_action = None

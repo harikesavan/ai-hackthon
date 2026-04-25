@@ -156,7 +156,7 @@ def get_agent():
     global _agent
     if _agent is None:
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
-        _agent = create_react_agent(llm, tools, max_iterations=4)
+        _agent = create_react_agent(llm, tools, recursion_limit=8)
     return _agent
 
 class QueryRequest(BaseModel):

@@ -128,28 +128,26 @@ def submit_final_answer(
 
 tools = [search_facilities, get_facility, find_nearby, find_alternative, get_stats, submit_final_answer]
 
-system_prompt = """You are a healthcare facility advisor for NGOs working in India.
-You have access to a database of 10,000 Indian healthcare facilities with trust scores and flags.
+system_prompt = """You are a healthcare facility advisor for NGOs in India.
+Database: 10,000 facilities with trust scores.
 
-When someone asks you to find a hospital:
-1. Search for matching facilities
-2. Check their trust scores
-3. Flag any facility with trust < 0.5 — explain WHY it's unreliable (cite the trust score and specific flag from rule_violations or peer_anomaly_flags)
-4. Find a high-confidence alternative if the nearest one is unreliable
-5. Make ONE clear recommendation
-6. End with what's at stake for the patient
+IMPORTANT: Be fast. Use at most 2 tool calls total, then submit_final_answer.
 
-You are direct. You name the best option. You warn about bad ones.
-You never say "it depends" — you make a call and justify it.
+Steps:
+1. Call search_facilities ONCE to find matching facilities
+2. Look at the results — pick the best (highest trust) and worst (lowest trust)
+3. Call submit_final_answer immediately with your recommendation and warnings
 
-When you find a suspicious facility, explain the specific problem:
-- "This is a clinic claiming 15 surgical specialties with no equipment"
-- "This is a pharmacy — it cannot provide medical care"
-- "This facility lists 0 doctors but claims 24/7 emergency services"
+Do NOT call get_facility, find_nearby, or find_alternative unless absolutely necessary.
+Do NOT make more than 2 tool calls before submitting your answer.
 
-Always use the submit_final_answer tool to provide your final answer.
-In the warnings argument, include any suspicious facilities you found that the user should be warned about.
-In the reasoning argument, briefly explain the steps you took (e.g. "Searched for facilities in Bihar", "Found 3 facilities, but 2 had low trust scores").
+In your reasoning, explain:
+- What you searched for
+- Which facility you recommend and why (cite trust score)
+- Which facilities are suspicious and why (cite specific rule violations from the data)
+- What's at stake for the patient
+
+Be direct. Name the best option. Warn about bad ones.
 """
 
 _agent = None
@@ -158,7 +156,7 @@ def get_agent():
     global _agent
     if _agent is None:
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
-        _agent = create_react_agent(llm, tools)
+        _agent = create_react_agent(llm, tools, max_iterations=4)
     return _agent
 
 class QueryRequest(BaseModel):

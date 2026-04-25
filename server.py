@@ -156,7 +156,7 @@ def get_agent():
     global _agent
     if _agent is None:
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
-        _agent = create_react_agent(llm, tools, recursion_limit=8)
+        _agent = create_react_agent(llm, tools)
     return _agent
 
 class QueryRequest(BaseModel):
@@ -193,12 +193,13 @@ async def run_query(req: QueryRequest):
     try:
         agent_executor = get_agent()
         print("[QUERY] Agent initialized, invoking...", flush=True, file=sys.stderr)
-        response = agent_executor.invoke({
-            "messages": [
+        response = agent_executor.invoke(
+            {"messages": [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=req.message)
-            ]
-        })
+            ]},
+            {"recursion_limit": 8}
+        )
 
         final_action = None
         for msg in reversed(response["messages"]):

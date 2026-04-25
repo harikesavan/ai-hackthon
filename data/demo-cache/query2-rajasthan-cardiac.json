@@ -12,12 +12,44 @@
     "reason": "Dedicated heart and critical care hospital. Name and specialties are consistent. Trust: 0.9."
   },
   "reasoning": [
-    {"step": "search", "text": "Found 24 facilities in Rajasthan claiming cardiology or cardiac specialties."},
-    {"step": "filter", "text": "Checking each facility's type, equipment, and staffing against their cardiac claims."},
-    {"step": "warning", "text": "⚠ Krishna Homeopathy Research Hospital in Jaipur claims cardiology, nephrology, urology, and plastic surgery — but it's a homeopathy clinic with 1 doctor and zero equipment. Trust: 0.25. This is a clinic claiming specialties it cannot deliver."},
-    {"step": "warning", "text": "⚠ Akris Homeopathy in Jaipur claims colorectal surgery — another homeopathy clinic with surgical claims and no equipment. Trust: 0.4."},
-    {"step": "recommend", "text": "✓ City Heart and Critical Care Center in Kota is a dedicated cardiac facility. Trust: 0.9. The name, type, and specialties are consistent."},
-    {"step": "human", "text": "A cardiac emergency has a narrow window. Sending a patient to a homeopathy clinic claiming cardiology costs time that could cost a life. City Heart in Kota is the verified option."}
+    {
+      "step": "search",
+      "text": "Twenty-four facilities in Rajasthan claim cardiac specialties. Let me check each one.",
+      "delay": 400
+    },
+    {
+      "step": "filter",
+      "text": "Cross-referencing each facility's type, equipment list, and doctor count against what they claim...",
+      "delay": 600
+    },
+    {
+      "step": "warning",
+      "text": "⚠ Krishna Homeopathy Research Hospital in Jaipur.",
+      "delay": 1200,
+      "highlight": {"type": "red", "facilityId": 22107, "lat": 26.902159, "lon": 75.737976}
+    },
+    {
+      "step": "warning",
+      "text": "This is a homeopathy clinic. It claims cardiology, nephrology, urology, and plastic surgery. One doctor. Zero equipment. These specialties require catheterization labs, ICU beds, and surgical teams — none of which exist here.",
+      "delay": 1500
+    },
+    {
+      "step": "warning",
+      "text": "⚠ Akris Homeopathy, also in Jaipur — claims colorectal surgery. Same pattern. Homeopathy clinic, no equipment.",
+      "delay": 800,
+      "highlight": {"type": "red", "facilityId": 15734, "lat": 26.90478, "lon": 75.836655}
+    },
+    {
+      "step": "recommend",
+      "text": "✓ City Heart and Critical Care Center in Kota. Dedicated cardiac hospital. Trust score: 0.9. The name, type, and claimed specialties are consistent.",
+      "delay": 1000,
+      "highlight": {"type": "green", "facilityId": 17508, "lat": 25.131048, "lon": 75.8573}
+    },
+    {
+      "step": "human",
+      "text": "A family searching for cardiac care in Jaipur could find the homeopathy clinic on Google. It looks real. They would drive there. And they would lose hours they cannot afford to lose.",
+      "delay": 1200
+    }
   ],
   "warnings": [
     {

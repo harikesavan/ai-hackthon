@@ -18,7 +18,8 @@ const CACHE_MAP: Record<string, string> = {
   "tamil": "query3-chennai-surgery.json",
 };
 
-type ReasoningStep = { step: string; text: string };
+type Highlight = { type: "red" | "green"; facilityId: number; lat: number; lon: number };
+type ReasoningStep = { step: string; text: string; delay?: number; highlight?: Highlight };
 type Warning = { facilityId: number; name: string; trustMin: number; reason: string };
 type Recommendation = {
   facilityId: number; name: string; type: string;
@@ -106,8 +107,13 @@ export async function POST(request: NextRequest) {
       send("query", { query: data.query });
 
       for (const step of data.reasoning) {
-        await new Promise((r) => setTimeout(r, 800));
-        send("reasoning", step);
+        const delay = (step as ReasoningStep).delay ?? 800;
+        await new Promise((r) => setTimeout(r, delay));
+        send("reasoning", { step: step.step, text: step.text });
+
+        if ((step as ReasoningStep).highlight) {
+          send("highlight", (step as ReasoningStep).highlight);
+        }
       }
 
       if (data.warnings.length > 0) {

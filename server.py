@@ -17,7 +17,9 @@ load_dotenv(".env.local", override=False)
 app = FastAPI()
 
 def get_db_connection():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    url = os.getenv("DATABASE_URL", "")
+    url = url.replace("channel_binding=require", "").rstrip("&").rstrip("?")
+    return psycopg2.connect(url)
 
 @tool
 def search_facilities(state: str, specialty: str, facility_type: str = "", min_trust: float = 0.0, limit: int = 20) -> list:

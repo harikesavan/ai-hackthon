@@ -37,6 +37,7 @@ export const MapView = ({
   return (
     <section className="relative h-full w-full overflow-hidden">
       <MapContainer
+        key={isDarkMode ? "dark-map" : "light-map"}
         bounds={indiaBounds}
         minZoom={4.5}
         maxZoom={10}

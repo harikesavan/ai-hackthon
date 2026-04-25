@@ -1,6 +1,6 @@
 "use client";
 
-import { getStatusLabel, statusColorMap } from "@/lib/map-utils";
+import { getStatusLabel } from "@/lib/map-utils";
 import type { Facility } from "@/types/healthcare";
 import type { Capability } from "@/types/healthcare";
 import { CircleMarker, Tooltip } from "react-leaflet";
@@ -18,6 +18,17 @@ export const FacilityLayer = ({
   selectedFacilityId,
   onSelectFacility,
 }: FacilityLayerProps) => {
+  const getFillColor = (trust: number) => {
+    const trustRatio = trust / 100;
+    if (trustRatio > 0.7) {
+      return "#22c55e";
+    }
+    if (trustRatio >= 0.3) {
+      return "#eab308";
+    }
+    return "#ef4444";
+  };
+
   return (
     <>
       {facilities.map((facility) => {
@@ -32,7 +43,7 @@ export const FacilityLayer = ({
             pathOptions={{
               color: selectedFacilityId === facility.id ? "#67e8f9" : "#ffffff",
               weight: selectedFacilityId === facility.id ? 2.5 : 1,
-              fillColor: statusColorMap[status],
+              fillColor: getFillColor(facility.trust),
               fillOpacity: Math.max(0.35, facility.trust / 100),
             }}
             eventHandlers={{

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { getStatusLabel } from "@/lib/map-utils";
-import type { Facility, MapState } from "@/types/healthcare";
+import type { Facility, MapState, ReviewStatus } from "@/types/healthcare";
 
 type FacilityDetailPanelProps = {
   facility: Facility | null;
@@ -16,9 +17,41 @@ export const FacilityDetailPanel = ({
   isDarkMode,
   onClose,
 }: FacilityDetailPanelProps) => {
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<ReviewStatus>("pending");
+  const [reviewMessage, setReviewMessage] = useState("");
+
   if (!facility) {
     return null;
   }
+
+  const handleReviewSubmit = async (status: ReviewStatus) => {
+    setIsSubmittingReview(true);
+    setReviewMessage("");
+    try {
+      const response = await fetch("/api/review", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          facilityId: Number(facility.id),
+          status,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save review");
+      }
+
+      setReviewStatus(status);
+      setReviewMessage("Review saved.");
+    } catch (error) {
+      console.error(error);
+      setReviewMessage("Could not save review.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   return (
     <section
@@ -66,6 +99,54 @@ export const FacilityDetailPanel = ({
         <p>
           <strong>Trust explanation:</strong> {facility.trustExplanation}
         </p>
+      </div>
+      <div className="mt-4 space-y-2">
+        <p className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
+          Reviewer actions
+        </p>
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            type="button"
+            className={
+              reviewStatus === "confirmed_ghost"
+                ? "rounded-md bg-slate-500 px-2 py-2 text-xs font-medium text-white"
+                : "rounded-md bg-red-500 px-2 py-2 text-xs font-medium text-white hover:bg-red-400"
+            }
+            disabled={isSubmittingReview || reviewStatus === "confirmed_ghost"}
+            onClick={() => handleReviewSubmit("confirmed_ghost")}
+          >
+            Confirm Ghost
+          </button>
+          <button
+            type="button"
+            className={
+              reviewStatus === "confirmed_real"
+                ? "rounded-md bg-slate-500 px-2 py-2 text-xs font-medium text-white"
+                : "rounded-md bg-green-600 px-2 py-2 text-xs font-medium text-white hover:bg-green-500"
+            }
+            disabled={isSubmittingReview || reviewStatus === "confirmed_real"}
+            onClick={() => handleReviewSubmit("confirmed_real")}
+          >
+            Confirm Real
+          </button>
+          <button
+            type="button"
+            className={
+              reviewStatus === "needs_visit"
+                ? "rounded-md bg-slate-500 px-2 py-2 text-xs font-medium text-white"
+                : "rounded-md bg-amber-500 px-2 py-2 text-xs font-medium text-slate-950 hover:bg-amber-400"
+            }
+            disabled={isSubmittingReview || reviewStatus === "needs_visit"}
+            onClick={() => handleReviewSubmit("needs_visit")}
+          >
+            Needs Site Visit
+          </button>
+        </div>
+        {reviewMessage ? (
+          <p className={isDarkMode ? "text-xs text-cyan-300" : "text-xs text-cyan-700"}>
+            {reviewMessage}
+          </p>
+        ) : null}
       </div>
     </section>
   );

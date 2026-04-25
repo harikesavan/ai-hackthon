@@ -6,6 +6,11 @@ export type Capability =
   | "Oncology";
 
 export type CapabilityStatus = "full" | "partial" | "missing";
+export type ReviewStatus =
+  | "pending"
+  | "confirmed_real"
+  | "confirmed_ghost"
+  | "needs_visit";
 
 export type LocationFilter = {
   country: string;
@@ -42,4 +47,24 @@ export type Facility = {
   evidence: string;
   trustExplanation: string;
   capabilities: Record<Capability, CapabilityStatus>;
+};
+
+export type RuleViolation = {
+  rule: string;
+  description: string;
+  citation: string;
+  severity?: string;
+};
+
+export type FacilityCard = {
+  id: number;
+  facilityName: string;
+  facilityType: string | null;
+  state: string | null;
+  district: string | null;
+  lat: number | null;
+  lon: number | null;
+  trustMin: number | null;
+  reviewStatus: ReviewStatus | null;
+  ruleViolations: RuleViolation[] | null;
 };

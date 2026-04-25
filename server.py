@@ -164,6 +164,16 @@ def get_agent():
 class QueryRequest(BaseModel):
     message: str
 
+@app.get("/debug-env")
+async def debug_env():
+    db_url = os.getenv("DATABASE_URL", "NOT_SET")
+    oai_key = os.getenv("OPENAI_API_KEY", "NOT_SET")
+    return {
+        "DATABASE_URL_starts": db_url[:30] if db_url != "NOT_SET" else "NOT_SET",
+        "DATABASE_URL_length": len(db_url),
+        "OPENAI_KEY_set": oai_key != "NOT_SET",
+    }
+
 @app.get("/health")
 async def health():
     try:

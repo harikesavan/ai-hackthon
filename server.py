@@ -152,7 +152,7 @@ _agent = None
 def get_agent():
     global _agent
     if _agent is None:
-        llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
+        llm = ChatOpenAI(model="gpt-5.5", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
         _agent = create_react_agent(llm, tools)
     return _agent
 

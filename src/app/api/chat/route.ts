@@ -3,7 +3,9 @@ import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+}
 
 const SYSTEM_PROMPT = `You are a healthcare facility query agent for India.
 You have access to a PostgreSQL database with a table called "facilities" containing 10,000 Indian healthcare facilities.
@@ -39,6 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

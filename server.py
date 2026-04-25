@@ -12,7 +12,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 
-load_dotenv(".env.local")
+load_dotenv(".env.local", override=False)
 
 app = FastAPI()
 
@@ -150,14 +150,21 @@ In the warnings argument, include any suspicious facilities you found that the u
 In the reasoning argument, briefly explain the steps you took (e.g. "Searched for facilities in Bihar", "Found 3 facilities, but 2 had low trust scores").
 """
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
-agent_executor = create_react_agent(llm, tools)
+_agent = None
+
+def get_agent():
+    global _agent
+    if _agent is None:
+        llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=os.getenv("OPENAI_API_KEY"))
+        _agent = create_react_agent(llm, tools)
+    return _agent
 
 class QueryRequest(BaseModel):
     message: str
 
 @app.post("/query")
 async def run_query(req: QueryRequest):
+    agent_executor = get_agent()
     response = agent_executor.invoke({
         "messages": [
             SystemMessage(content=system_prompt),

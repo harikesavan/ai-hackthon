@@ -162,10 +162,23 @@ def get_agent():
 class QueryRequest(BaseModel):
     message: str
 
+@app.get("/health")
+async def health():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT count(*) FROM facilities")
+        count = cur.fetchone()[0]
+        conn.close()
+        return {"status": "ok", "facilities": count, "openai_key_set": bool(os.getenv("OPENAI_API_KEY"))}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+
 @app.post("/query")
 async def run_query(req: QueryRequest):
-    agent_executor = get_agent()
-    response = agent_executor.invoke({
+    try:
+        agent_executor = get_agent()
+        response = agent_executor.invoke({
         "messages": [
             SystemMessage(content=system_prompt),
             HumanMessage(content=req.message)
@@ -189,25 +202,27 @@ async def run_query(req: QueryRequest):
     highlight_green = [final_action["recommendation_facility_id"]]
     highlight_red = [w["facilityId"] for w in final_action.get("warnings", [])]
 
-    return {
-        "query": req.message,
-        "recommendation": {
-            "facilityId": final_action["recommendation_facility_id"],
-            "name": final_action["recommendation_name"],
-            "lat": final_action["recommendation_lat"],
-            "lon": final_action["recommendation_lon"],
-            "trustMin": final_action["recommendation_trust"],
-            "reason": final_action["recommendation_reason"]
-        },
-        "reasoning": final_action.get("reasoning", []),
-        "warnings": final_action.get("warnings", []),
-        "mapState": {
-            "center": map_center,
-            "zoom": 10,
-            "highlightGreen": highlight_green,
-            "highlightRed": highlight_red
+        return {
+            "query": req.message,
+            "recommendation": {
+                "facilityId": final_action["recommendation_facility_id"],
+                "name": final_action["recommendation_name"],
+                "lat": final_action["recommendation_lat"],
+                "lon": final_action["recommendation_lon"],
+                "trustMin": final_action["recommendation_trust"],
+                "reason": final_action["recommendation_reason"]
+            },
+            "reasoning": final_action.get("reasoning", []),
+            "warnings": final_action.get("warnings", []),
+            "mapState": {
+                "center": map_center,
+                "zoom": 10,
+                "highlightGreen": highlight_green,
+                "highlightRed": highlight_red
+            }
         }
-    }
+    except Exception as e:
+        return {"error": str(e), "query": req.message}
 
 if __name__ == "__main__":
     import uvicorn

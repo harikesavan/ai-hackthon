@@ -18,7 +18,6 @@ export const defaultMapState: MapState = {
   trustMin: 60,
   availability: {
     open247: false,
-    staffing: "full-time",
   },
 };
 

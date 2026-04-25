@@ -20,7 +20,6 @@ export type LocationFilter = {
 
 export type AvailabilityFilters = {
   open247: boolean;
-  staffing: "full-time" | "part-time";
 };
 
 export type MapState = {

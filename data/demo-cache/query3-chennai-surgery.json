@@ -1,0 +1,36 @@
+{
+  "query": "Find a surgery facility in Chennai",
+  "recommendation": {
+    "facilityId": 15308,
+    "name": "Aadhaar Hospital",
+    "type": "Hospital",
+    "district": "Tirupur",
+    "state": "Tamil Nadu",
+    "lat": 11.111446,
+    "lon": 77.338356,
+    "trustMin": 0.9,
+    "reason": "Hospital type facility with consistent data. Trust: 0.9."
+  },
+  "reasoning": [
+    {"step": "search", "text": "Found 38 facilities in Tamil Nadu claiming surgical specialties."},
+    {"step": "filter", "text": "Checking each one — are they actually hospitals with equipment, or clinics overclaiming?"},
+    {"step": "warning", "text": "⚠ KP Care Centre in Chennai claims orthopedic surgery and oral surgery — but its own description says 'your Dental health and Bone joint health is our priority.' This is a dental clinic listing surgical specialties. Trust: 0.0."},
+    {"step": "warning", "text": "⚠ KP Care Centre also lists zero equipment. A facility claiming surgery with no equipment on record cannot perform those procedures safely."},
+    {"step": "recommend", "text": "✓ Aadhaar Hospital in Tirupur is a verified hospital. Trust: 0.9. Data is consistent with claimed capabilities."},
+    {"step": "human", "text": "A patient looking for surgery in Chennai could easily find KP Care Centre online. It appears to offer orthopedic surgery. It's actually a dental clinic. Our tool catches that before the patient makes the trip."}
+  ],
+  "warnings": [
+    {
+      "facilityId": 22079,
+      "name": "KP Care Centre",
+      "trustMin": 0.0,
+      "reason": "Dental clinic claiming orthopedic surgery. Description says 'Dental health is our priority.' Zero equipment listed."
+    }
+  ],
+  "mapState": {
+    "center": [80.21016, 13.088874],
+    "zoom": 10,
+    "highlightGreen": [15308],
+    "highlightRed": [22079]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "query": "I need a hospital near Patna for an emergency C-section",
+  "recommendation": {
+    "facilityId": 15813,
+    "name": "Al-Shifa Surgical & Maternity Hospital",
+    "type": "Hospital",
+    "district": "Bihar Sharif",
+    "state": "Bihar",
+    "lat": 25.202965,
+    "lon": 85.52953,
+    "trustMin": 0.9,
+    "reason": "Surgical and maternity hospital with consistent data. Name indicates dedicated maternity services."
+  },
+  "reasoning": [
+    {"step": "search", "text": "Found 47 facilities in Bihar claiming obstetric or gynecology services."},
+    {"step": "filter", "text": "Narrowed to hospitals and clinics with trust score above 0.5. 12 remain."},
+    {"step": "warning", "text": "⚠ Shree Pradhan Hospital in Muzaffarpur claims obstetric services but lists 0 doctors and has zero equipment on record. Trust: 0.25. Do not refer here — the claims cannot be verified."},
+    {"step": "recommend", "text": "✓ Al-Shifa Surgical & Maternity Hospital in Bihar Sharif is a dedicated surgical and maternity facility. Trust: 0.9. Data is consistent with its claimed capabilities."},
+    {"step": "human", "text": "For a woman with a complicated pregnancy, being sent to the wrong facility means losing hours she may not have. Al-Shifa is the safest referral in this area."}
+  ],
+  "warnings": [
+    {
+      "facilityId": 24112,
+      "name": "Shree Pradhan Hospital",
+      "trustMin": 0.25,
+      "reason": "Claims obstetric services but lists 0 doctors and zero equipment. Data does not support these claims."
+    }
+  ],
+  "mapState": {
+    "center": [85.52953, 25.202965],
+    "zoom": 9,
+    "highlightGreen": [15813],
+    "highlightRed": [24112]
+  }
+}

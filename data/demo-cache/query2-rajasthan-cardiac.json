@@ -1,0 +1,42 @@
+{
+  "query": "Where can I send a cardiac patient in Rajasthan?",
+  "recommendation": {
+    "facilityId": 17508,
+    "name": "City Heart and Critical Care Center",
+    "type": "Hospital",
+    "district": "Kota",
+    "state": "Rajasthan",
+    "lat": 25.131048,
+    "lon": 75.8573,
+    "trustMin": 0.9,
+    "reason": "Dedicated heart and critical care hospital. Name and specialties are consistent. Trust: 0.9."
+  },
+  "reasoning": [
+    {"step": "search", "text": "Found 24 facilities in Rajasthan claiming cardiology or cardiac specialties."},
+    {"step": "filter", "text": "Checking each facility's type, equipment, and staffing against their cardiac claims."},
+    {"step": "warning", "text": "⚠ Krishna Homeopathy Research Hospital in Jaipur claims cardiology, nephrology, urology, and plastic surgery — but it's a homeopathy clinic with 1 doctor and zero equipment. Trust: 0.25. This is a clinic claiming specialties it cannot deliver."},
+    {"step": "warning", "text": "⚠ Akris Homeopathy in Jaipur claims colorectal surgery — another homeopathy clinic with surgical claims and no equipment. Trust: 0.4."},
+    {"step": "recommend", "text": "✓ City Heart and Critical Care Center in Kota is a dedicated cardiac facility. Trust: 0.9. The name, type, and specialties are consistent."},
+    {"step": "human", "text": "A cardiac emergency has a narrow window. Sending a patient to a homeopathy clinic claiming cardiology costs time that could cost a life. City Heart in Kota is the verified option."}
+  ],
+  "warnings": [
+    {
+      "facilityId": 22107,
+      "name": "Krishna Homeopathy Research Hospital",
+      "trustMin": 0.25,
+      "reason": "Homeopathy clinic claiming cardiology, nephrology, urology, and surgery with 1 doctor and zero equipment"
+    },
+    {
+      "facilityId": 15734,
+      "name": "Akris Homeopathy",
+      "trustMin": 0.4,
+      "reason": "Homeopathy clinic claiming colorectal surgery with no equipment"
+    }
+  ],
+  "mapState": {
+    "center": [75.8573, 25.131048],
+    "zoom": 7,
+    "highlightGreen": [17508],
+    "highlightRed": [22107, 15734]
+  }
+}

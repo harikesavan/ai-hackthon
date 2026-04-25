@@ -179,28 +179,28 @@ async def run_query(req: QueryRequest):
     try:
         agent_executor = get_agent()
         response = agent_executor.invoke({
-        "messages": [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=req.message)
-        ]
-    })
-    
-    final_action = None
-    for msg in reversed(response["messages"]):
-        if hasattr(msg, "tool_calls") and msg.tool_calls:
-            for tc in msg.tool_calls:
-                if tc["name"] == "submit_final_answer":
-                    final_action = tc["args"]
-                    break
-        if final_action:
-            break
-            
-    if not final_action:
-        return {"error": "Agent did not use submit_final_answer tool correctly."}
-        
-    map_center = [final_action["recommendation_lon"], final_action["recommendation_lat"]]
-    highlight_green = [final_action["recommendation_facility_id"]]
-    highlight_red = [w["facilityId"] for w in final_action.get("warnings", [])]
+            "messages": [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=req.message)
+            ]
+        })
+
+        final_action = None
+        for msg in reversed(response["messages"]):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    if tc["name"] == "submit_final_answer":
+                        final_action = tc["args"]
+                        break
+            if final_action:
+                break
+
+        if not final_action:
+            return {"error": "Agent did not use submit_final_answer tool correctly.", "query": req.message}
+
+        map_center = [final_action["recommendation_lon"], final_action["recommendation_lat"]]
+        highlight_green = [final_action["recommendation_facility_id"]]
+        highlight_red = [w["facilityId"] for w in final_action.get("warnings", [])]
 
         return {
             "query": req.message,

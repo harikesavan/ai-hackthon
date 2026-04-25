@@ -1,0 +1,1111 @@
+[
+  {
+    "facility_name": "1000 Smiles Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": null,
+    "state": "Telangana",
+    "district": "Hyderabad",
+    "pincode": "500013",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "Root Canal Therapy (RCT)",
+      "Laser Dentistry"
+    ],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine",
+      "periodontics",
+      "endodontics",
+      "dentistry",
+      "aestheticDentistry"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "Dental clinic offering RCT (Root Canal) and Laser Dentistry in Amberpet, Hyderabad.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Root Canal Therapy (RCT)",
+        "reason": "Source does not specify services offered."
+      },
+      {
+        "field": "services",
+        "value": "Laser Dentistry",
+        "reason": "Source does not specify services offered."
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine as a specialty."
+      },
+      {
+        "field": "specialties",
+        "value": "periodontics",
+        "reason": "Source does not mention periodontics as a specialty."
+      },
+      {
+        "field": "specialties",
+        "value": "endodontics",
+        "reason": "Source does not mention endodontics as a specialty."
+      },
+      {
+        "field": "specialties",
+        "value": "dentistry",
+        "reason": "Source does not mention dentistry as a specialty."
+      },
+      {
+        "field": "specialties",
+        "value": "aestheticDentistry",
+        "reason": "Source does not mention aesthetic dentistry as a specialty."
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Has been in operation for 10 years\",\"Dental clinic\"]"
+  },
+  {
+    "facility_name": "108 Eye And Heath Centre",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Uttar Pradesh",
+    "district": "Noida",
+    "pincode": "201307",
+    "beds": null,
+    "doctors": 1,
+    "services": [
+      "Treats Squint",
+      "Glaucoma management",
+      "Offers Paediatric Ophthalmology",
+      "Performs cataract surgery",
+      "General eye check-up",
+      "Manages Uveitis",
+      "Cataract surgery",
+      "LASIK",
+      "IPCL",
+      "Pre-LASIK tests",
+      "Provides Basic Eye Check Up",
+      "Offers Retina Treatment Services",
+      "Offers Glaucoma Treatment",
+      "Offers Neuro Ophthalmology",
+      "ICL",
+      "Post-LASIK care",
+      "Squint correction",
+      "Retina treatment",
+      "Pediatric ophthalmology services"
+    ],
+    "equipment": [],
+    "specialties": [
+      "pediatricsAndStrabismusOphthalmology",
+      "ophthalmology",
+      "refractiveSurgeryOphthalmology",
+      "familyMedicine",
+      "eyeTraumaAndEmergencyEyeCare",
+      "cataractAndAnteriorSegmentSurgery",
+      "uveitisOphthalmology",
+      "retinaAndVitreoretinalOphthalmology",
+      "glaucomaOphthalmology",
+      "neuroOphthalmology"
+    ],
+    "staff_details": [
+      {
+        "specialty": "ophthalmology"
+      }
+    ],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "108 Eye And Health Centre is a private clinic in Noida specializing in comprehensive eye care services.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Performs cataract surgery",
+        "reason": "Source does not mention cataract surgery specifically"
+      },
+      {
+        "field": "services",
+        "value": "Manages Uveitis",
+        "reason": "Source does not mention managing Uveitis specifically"
+      },
+      {
+        "field": "services",
+        "value": "Offers Glaucoma Treatment",
+        "reason": "Source does not mention glaucoma treatment specifically"
+      },
+      {
+        "field": "services",
+        "value": "ICL",
+        "reason": "Source does not mention ICL specifically"
+      },
+      {
+        "field": "services",
+        "value": "Post-LASIK care",
+        "reason": "Source does not mention post-LASIK care specifically"
+      },
+      {
+        "field": "services",
+        "value": "Squint correction",
+        "reason": "Source does not mention squint correction specifically"
+      },
+      {
+        "field": "services",
+        "value": "Retina treatment",
+        "reason": "Source does not mention retina treatment specifically"
+      },
+      {
+        "field": "services",
+        "value": "Pediatric ophthalmology services",
+        "reason": "Source does not mention pediatric ophthalmology services specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "pediatricsAndStrabismusOphthalmology",
+        "reason": "Source does not mention pediatrics and strabismus ophthalmology specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "refractiveSurgeryOphthalmology",
+        "reason": "Source does not mention refractive surgery ophthalmology specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "eyeTraumaAndEmergencyEyeCare",
+        "reason": "Source does not mention eye trauma and emergency eye care specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "cataractAndAnteriorSegmentSurgery",
+        "reason": "Source does not mention cataract and anterior segment surgery specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "uveitisOphthalmology",
+        "reason": "Source does not mention uveitis ophthalmology specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "retinaAndVitreoretinalOphthalmology",
+        "reason": "Source does not mention retina and vitreoretinal ophthalmology specifically"
+      },
+      {
+        "field": "specialties",
+        "value": "glaucomaOphthalmology",
+        "reason": "Source does not mention glaucoma ophthalmology specifically"
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Neuro Ophthalmology services offered\",\"Outpatient ophthalmology clinic\",\"Has 1 ophthalmologist/eye surgeon on staff\",\"Dr. B K Varma is an ophthalmologist/eye surgeon with 17 years of experience\",\"Retina Treatment Services offered\",\"Paediatric Ophthalmology services offered\",\"Employs experienced ophthalmologists\",\"Uses latest equipment and world-standard technologies in eye care\",\"Provides comprehensive eye care services under one roof\"]"
+  },
+  {
+    "facility_name": "14 Stars Dental",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Uttar Pradesh",
+    "district": "Aurangabad",
+    "pincode": "281001",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "General dentistry services"
+    ],
+    "equipment": [],
+    "specialties": [
+      "dentistry",
+      "generalDentistry"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "14 Stars Dental is a private clinic dedicated to providing superior dental care at affordable prices.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "[\"General dentistry services\"]"
+  },
+  {
+    "facility_name": "24x7 Family Clinix",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": null,
+    "state": "Uttar Pradesh",
+    "district": "Ghaziabad",
+    "pincode": "201017",
+    "beds": null,
+    "doctors": null,
+    "services": [],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "24x7 Family Clinix is a clinic specializing in family medicine.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "[]"
+  },
+  {
+    "facility_name": "3 E EYE CARE",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Gujarat",
+    "district": "Ahmedabad",
+    "pincode": "380014",
+    "beds": null,
+    "doctors": null,
+    "services": [],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "Efficient Eye Care with Human Touch!",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "nan"
+  },
+  {
+    "facility_name": "30 + Ayurved Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Maharashtra",
+    "district": "Pune",
+    "pincode": "411041",
+    "beds": null,
+    "doctors": null,
+    "services": [],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "30 + Ayurved Clinic is a private clinic located in Pune, Maharashtra, specializing in family medicine.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "nan"
+  },
+  {
+    "facility_name": "32 Crowns Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Punjab",
+    "district": "Dinanagar",
+    "pincode": "143531",
+    "beds": null,
+    "doctors": null,
+    "services": [],
+    "equipment": [],
+    "specialties": [
+      "endodontics",
+      "dentistry",
+      "familyMedicine",
+      "prosthodontics"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Crowns Dental Clinic is a private dental clinic located in Dinanagar, Punjab.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "nan"
+  },
+  {
+    "facility_name": "32 Dental Care",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Punjab",
+    "district": "Amritsar",
+    "pincode": "143001",
+    "beds": null,
+    "doctors": 1,
+    "services": [
+      "Performs dental restoration",
+      "General Dentistry Treatment Services",
+      "Performs wisdom tooth extraction",
+      "Offers ceramic veneers / crowns",
+      "Performs full mouth rehabilitation",
+      "Offers smile design",
+      "Provides children's dentistry",
+      "Root Coverage Surgery Services",
+      "Performs impaction / impacted tooth extraction",
+      "Offers implant prosthesis",
+      "Teeth Cleaning Services",
+      "Performs re-root canal treatment",
+      "Dental Implant Service",
+      "Periodontal Dental Treatment Services",
+      "Outpatient dental clinic"
+    ],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine",
+      "generalDentistry",
+      "prosthodontics",
+      "dentoalveolarSurgery",
+      "periodontics",
+      "oralAndMaxillofacialSurgery",
+      "dentistry",
+      "endodontics"
+    ],
+    "staff_details": [
+      {
+        "specialty": "Dentist"
+      }
+    ],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Dental Care is a private outpatient dental clinic in Amritsar, Punjab, offering a range of dental services including general dentistry and specialized treatments.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Root Coverage Surgery Services",
+        "reason": "Source does not mention root coverage surgery"
+      },
+      {
+        "field": "services",
+        "value": "Performs re-root canal treatment",
+        "reason": "Source does not mention re-root canal treatment"
+      },
+      {
+        "field": "services",
+        "value": "Dental Implant Service",
+        "reason": "Source does not mention dental implant service"
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine as a specialty"
+      },
+      {
+        "field": "specialties",
+        "value": "prosthodontics",
+        "reason": "Source does not mention prosthodontics as a specialty"
+      },
+      {
+        "field": "specialties",
+        "value": "dentoalveolarSurgery",
+        "reason": "Source does not mention dentoalveolar surgery as a specialty"
+      },
+      {
+        "field": "specialties",
+        "value": "periodontics",
+        "reason": "Source does not mention periodontics as a specialty"
+      },
+      {
+        "field": "specialties",
+        "value": "oralAndMaxillofacialSurgery",
+        "reason": "Source does not mention oral and maxillofacial surgery as a specialty"
+      },
+      {
+        "field": "specialties",
+        "value": "endodontics",
+        "reason": "Source does not mention endodontics as a specialty"
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Has a dental surgeon on staff with 9 years of experience.\",\"Dr. Prashant Nanda holds BDS from Sri Guru Ram Das Institute of Dental Sciences Research, 2015\",\"Dr. Prashant Nanda is registered with Punjab State Dental Council (Registration 13860-A, 2016)\",\"Specializes as Dentist, Cosmetic/Aesthetic Dentist, Implantologist, and Dental Surgeon\",\"Outpatient dental clinic\",\"Has Dr. Prashant Nanda with 10 years of overall experience (9 years as specialist)\",\"Dr. Prashant Nanda is a member of the Dental Council of India and Indian Dental Association\",\"Offers in-clinic visits\",\"Dr. Prashant Nanda practices at 32 Dental Care Clinc in Loharka Kalan, Amritsar\"]"
+  },
+  {
+    "facility_name": "32 Dental Care Multispeciality Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Tamil Nadu",
+    "district": "Chidambaram",
+    "pincode": "608501",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "dentistry",
+      "familyMedicine"
+    ],
+    "equipment": [],
+    "specialties": [
+      "dentistry",
+      "familyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "This facility is a multispeciality dental clinic.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "[\"Multispeciality dental clinic\"]"
+  },
+  {
+    "facility_name": "32 Dental Focus",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Tamil Nadu",
+    "district": "Tiruppur",
+    "pincode": "641604",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "dental treatment",
+      "periodontics"
+    ],
+    "equipment": [],
+    "specialties": [
+      "dentistry",
+      "periodontics"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Dental Focus is a private dental clinic specializing in periodontics and providing advanced dental treatments.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "[\"Specializes in periodontics\",\"Uses advanced evidence-based technologies\",\"Offers complete dental treatment under one roof\",\"Maintains a specialized dental team of doctors\",\"Provides painless dental treatment\",\"In its 6th year of operation\"]"
+  },
+  {
+    "facility_name": "32 Dental Spa",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Maharashtra",
+    "district": "Pune",
+    "pincode": "411045",
+    "beds": null,
+    "doctors": 1,
+    "services": [
+      "Provides dental implant treatment",
+      "Offers dental implant procedures",
+      "Provides laser dental treatment",
+      "Offers cosmetic dentistry",
+      "Provides cosmetic dentistry services",
+      "Offers specialised dental treatment",
+      "Offers routine dental procedure",
+      "Offers dental laser treatments"
+    ],
+    "equipment": [
+      "On-site dental X-ray centres"
+    ],
+    "specialties": [
+      "endodontics",
+      "dentistry",
+      "cosmeticDentistry",
+      "familyMedicine"
+    ],
+    "staff_details": [
+      {
+        "specialty": "dentist"
+      }
+    ],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "Dental institute providing comprehensive services for dental implants, laser treatment, and cosmetic dentistry.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Provides dental implant treatment",
+        "reason": "Source mentions specializing in dental implants but does not state 'provides'."
+      },
+      {
+        "field": "services",
+        "value": "Offers dental implant procedures",
+        "reason": "Source mentions specializing in dental implants but does not state 'offers'."
+      },
+      {
+        "field": "services",
+        "value": "Provides laser dental treatment",
+        "reason": "Source mentions specializing in laser dentistry but does not state 'provides'."
+      },
+      {
+        "field": "services",
+        "value": "Offers specialised dental treatment",
+        "reason": "Source does not specify 'specialised dental treatment'."
+      },
+      {
+        "field": "services",
+        "value": "Offers routine dental procedure",
+        "reason": "Source does not mention 'routine dental procedure'."
+      },
+      {
+        "field": "equipment",
+        "value": "On-site dental X-ray centres",
+        "reason": "Source does not mention any specific equipment."
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine as a specialty."
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Outpatient dental care\",\"Specializes in laser dentistry\",\"Has operated for 12 years in healthcare\",\"Dentist with MDS on staff\",\"Has 10 years of operation\",\"Located in Pune, Maharashtra, India\",\"Specializes in dental implants\",\"Listed as a top endodontics clinic in Shivajinagar\",\"Specializes in cosmetic dentistry\",\"Outpatient dental services\",\"Located in Baner, Pune, Maharashtra\",\"Endodontics clinic located in Shivajinagar, Pune\"]"
+  },
+  {
+    "facility_name": "32 Diamonds Smile",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Delhi",
+    "district": "Malviya Nagar",
+    "pincode": "110017",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "Tooth reshaping",
+      "Root canal treatment (RCT)"
+    ],
+    "equipment": [
+      "Dental chair with overhead operatory light"
+    ],
+    "specialties": [
+      "endodontics",
+      "pediatricDentistry",
+      "familyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "Dental clinic providing outpatient dental care specializing in root canal therapy and cosmetic tooth reshaping.",
+    "unsupported_claims": [
+      {
+        "field": "specialties",
+        "value": "pediatricDentistry",
+        "reason": "Source does not mention pediatric dentistry as a specialty"
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine as a specialty"
+      }
+    ],
+    "extraction_confidence": "high",
+    "raw_notes": "[\"Dental clinic providing outpatient dental care\",\"Specializes in root canal therapy\",\"Specializes in cosmetic tooth reshaping\"]"
+  },
+  {
+    "facility_name": "32 Gems Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Haryana",
+    "district": "Faridabad",
+    "pincode": "121005",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "Dental examination with classic cleaning",
+      "Dental examination",
+      "Child dental examination",
+      "Adult dental examination"
+    ],
+    "equipment": [
+      "state-of-the-art dental technology"
+    ],
+    "specialties": [
+      "familyMedicine",
+      "dentistry",
+      "orthodontics"
+    ],
+    "staff_details": [],
+    "operating_hours": "Monday\u2013Friday 9:00 AM\u20137:00 PM; Sunday Closed; Saturday Closed",
+    "emergency_available": null,
+    "raw_summary": "32 Gems Dental Clinic is a private dental clinic in Faridabad offering high-quality dental care services for patients of all ages.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "[\"Clinicians have achieved the highest level of generalist dental education, with many specializing in orthodontics and dental implants\",\"Uses market-leading products for dental procedures\",\"Consultation rooms are equipped with state-of-the-art facilities\"]"
+  },
+  {
+    "facility_name": "32 Gems multispeciality dental clinic &Implant centre",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Kerala",
+    "district": "Thalassery",
+    "pincode": "670694",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "Pedodontics",
+      "Orthodontics",
+      "Root canal treatment",
+      "Complete denture",
+      "Partial denture"
+    ],
+    "equipment": [
+      "Prosthetic rehabilitation",
+      "Zirconia crown placement"
+    ],
+    "specialties": [
+      "familyMedicine",
+      "orthodontics",
+      "prosthodontics",
+      "endodontics",
+      "pediatricDentistry"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "A private multispeciality dental clinic offering various dental services including orthodontics and root canal treatments.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Pedodontics",
+        "reason": "Source does not mention pedodontics"
+      },
+      {
+        "field": "services",
+        "value": "Orthodontics",
+        "reason": "Source does not mention orthodontics"
+      },
+      {
+        "field": "services",
+        "value": "Root canal treatment",
+        "reason": "Source does not mention root canal treatment"
+      },
+      {
+        "field": "services",
+        "value": "Complete denture",
+        "reason": "Source does not mention complete denture"
+      },
+      {
+        "field": "services",
+        "value": "Partial denture",
+        "reason": "Source does not mention partial denture"
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine"
+      },
+      {
+        "field": "specialties",
+        "value": "orthodontics",
+        "reason": "Source does not mention orthodontics"
+      },
+      {
+        "field": "specialties",
+        "value": "prosthodontics",
+        "reason": "Source does not mention prosthodontics"
+      },
+      {
+        "field": "specialties",
+        "value": "endodontics",
+        "reason": "Source does not mention endodontics"
+      },
+      {
+        "field": "specialties",
+        "value": "pediatricDentistry",
+        "reason": "Source does not mention pediatric dentistry"
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Prosthetic rehabilitation provided\",\"Implant centre\",\"Multispeciality dental clinic\"]"
+  },
+  {
+    "facility_name": "32 Kings Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": null,
+    "state": "Kochi",
+    "district": null,
+    "pincode": "682017",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "Offers laser dentistry",
+      "Provides general dentistry for all ages",
+      "Offers cosmetic dentistry",
+      "Offers emergency dental care",
+      "Provides dental implants"
+    ],
+    "equipment": [
+      "Uses state-of-the-art dental equipment",
+      "Image shows dental examination instruments (mirror, probes) on a tray"
+    ],
+    "specialties": [
+      "familyMedicine",
+      "generalDentistry",
+      "prosthodontics",
+      "cosmeticDentistry",
+      "emergencyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Kings Dental Clinic is an outpatient dental clinic in Kochi and Perumbavoor, offering a range of dental services including laser and cosmetic dentistry.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Offers laser dentistry",
+        "reason": "Source does not mention laser dentistry"
+      },
+      {
+        "field": "services",
+        "value": "Provides general dentistry for all ages",
+        "reason": "Source does not specify general dentistry for all ages"
+      },
+      {
+        "field": "services",
+        "value": "Offers cosmetic dentistry",
+        "reason": "Source does not mention cosmetic dentistry"
+      },
+      {
+        "field": "services",
+        "value": "Offers emergency dental care",
+        "reason": "Source does not mention emergency dental care"
+      },
+      {
+        "field": "services",
+        "value": "Provides dental implants",
+        "reason": "Source does not mention dental implants"
+      },
+      {
+        "field": "specialties",
+        "value": "familyMedicine",
+        "reason": "Source does not mention family medicine"
+      },
+      {
+        "field": "specialties",
+        "value": "prosthodontics",
+        "reason": "Source does not mention prosthodontics"
+      },
+      {
+        "field": "specialties",
+        "value": "emergencyMedicine",
+        "reason": "Source does not mention emergency medicine"
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Operates in Kochi and Perumbavoor, Kerala, India\",\"Originates from Madathil Dental Clinic and has served the Perumbavoor community since 1980\",\"Outpatient dental clinic\"]"
+  },
+  {
+    "facility_name": "32 Pearl Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Madhya Pradesh",
+    "district": "Thandla",
+    "pincode": "457777",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "comprehensive oral care",
+      "dental treatments"
+    ],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "A private clinic providing comprehensive oral care and various dental treatments.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "nan"
+  },
+  {
+    "facility_name": "32 PEARLs Advanced Dental Care Centre Santokhgarh",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Himachal Pradesh",
+    "district": "Una",
+    "pincode": "174301",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "Orthodontic treatment",
+      "Root Canal Treatment (R.C.T)",
+      "Fracture treatment",
+      "Teeth whitening",
+      "Extraction and impactions",
+      "Dental implants"
+    ],
+    "equipment": [],
+    "specialties": [
+      "internalMedicine",
+      "endodontics",
+      "orthodontics",
+      "aestheticDentistry"
+    ],
+    "staff_details": [
+      {
+        "specialty": "Dentistry"
+      }
+    ],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "A private dental clinic specializing in orthodontic treatment and root canal procedures located in Santokhgarh, Himachal Pradesh.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Root Canal Treatment (R.C.T)",
+        "reason": "Source does not mention root canal treatment"
+      }
+    ],
+    "extraction_confidence": "high",
+    "raw_notes": "[\"Located in Santokhgarh, Una, Himachal Pradesh\",\"Implant and Orthodontic dental hospital signage visible in property\",\"Follows WHO standards for sterilization and hygiene including hand washing, PPE, glove changes, sterilization of non-disposable items, use of disposable instruments, antimicrobial disinfection\",\"Founded on 21 June 2006\",\"Specializes in dental implants and orthodontic treatment\",\"Dr. Aman Prashar governs the hospital\"]"
+  },
+  {
+    "facility_name": "32 Pearls Dental Care",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Haryana",
+    "district": "Faridabad",
+    "pincode": "121002",
+    "beds": null,
+    "doctors": 1,
+    "services": [
+      "Oral-Antral Fistula Repair",
+      "Correction of oro-antral communication",
+      "Dentoalveolar trauma - wiring",
+      "Fixation of fracture of jaw",
+      "Jaw Bone Infection Surgery",
+      "Jaw Cyst and Tumor Surgery",
+      "Apicoectomy (A) Tooth",
+      "Extraction of impacted tooth under LA",
+      "Mouth Fibrosis Surgery",
+      "Offers teeth aligners",
+      "Offers dental braces",
+      "Jaw Wiring for Fracture",
+      "Oral & Maxillofacial Surgery",
+      "Jaw Fracture Fixation",
+      "Oral and Jaw Surgery",
+      "Jaw Joint Stiffness Surgery",
+      "Mandible Tumour Resection and reconstruction / Cancer surgery",
+      "Impacted Tooth Removal",
+      "Offers dental implant surgery",
+      "Jaw Cancer Surgery"
+    ],
+    "equipment": [],
+    "specialties": [
+      "dentistry",
+      "familyMedicine"
+    ],
+    "staff_details": [
+      {
+        "specialty": "dentistry"
+      }
+    ],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Pearls Dental Care is a private dental clinic in Faridabad, Haryana, specializing in various dental procedures and surgeries.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Jaw Cancer Surgery",
+        "reason": "Source mentions oral and maxillofacial surgeries but does not specify jaw cancer surgery"
+      },
+      {
+        "field": "services",
+        "value": "Mandible Tumour Resection and reconstruction / Cancer surgery",
+        "reason": "Source mentions oral and maxillofacial surgeries but does not specify mandible tumor resection or cancer surgery"
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Has 1 doctor on staff\",\"Ayushman card facility provides comprehensive care\",\"Ayushman card facility provides financial protection against high medical expenses\",\"Awarded Best Patient Care in 2014\",\"Awarded Best Patient Care in 2017\",\"Ayushman card facility provides free medical treatment\",\"Ayushman card facility provides medical insurance cover up to Rs. 5 lakh\",\"Operates a dental clinic\",\"Awarded Best Practice & Team in 2016\",\"Ayushman card facility provides wide coverage of medical procedures and treatments\",\"Specializes in 27+ oral and maxillofacial surgeries\",\"Private hospital\",\"Outpatient dental clinic in Faridabad, Haryana, India\",\"Located in Faridabad, Haryana\",\"Empanelled under Ayushman Bharat PM-JAY scheme\",\"Offers 2+ treatment options\"]"
+  },
+  {
+    "facility_name": "32 Pearls Dental Clinic",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Jharkhand",
+    "district": "Dhanbad",
+    "pincode": "826001",
+    "beds": null,
+    "doctors": 5,
+    "services": [
+      "Full Mouth Rehabilitation",
+      "Tooth-supported fixed bridges",
+      "Emergency dental services",
+      "Complete dentures and implant-supported dentures",
+      "Child dental care with treatment planning considering age and mood and behavior management",
+      "Laser dentistry using dental lasers for oral surgery, caries removal and tooth preparation, soft tissue contouring, osseous crown lengthening, periodontology and endodontics",
+      "Cosmetic tooth filling",
+      "IOPA X-ray imaging for patients",
+      "Dental Hygiene",
+      "Cavity treatment using ART (Atraumatic Restorative Techniques)",
+      "Cosmetic dentistry with Smile Design",
+      "Root canal treatment",
+      "Dental & Oral X-ray",
+      "Implant",
+      "Surgical removal of cyst",
+      "Extraction of tooth",
+      "Scaling of teeth (cleaning)",
+      "Treatment of jaw pain and fractured jaw",
+      "Oral Appliance Therapy",
+      "Anti Aging Dental Treatment including teeth contouring, whitening, removal of cracks and dark lines from front surface, replacement of missing teeth, closing gaps between teeth and gums, and reducing skin folds at corners of mouth",
+      "Orthodontics braces and aligners by visiting orthodontist",
+      "Fixed ceramic teeth (crowns and bridges) restorations"
+    ],
+    "equipment": [
+      "Intraoral camera with display monitor as seen in clinic photographs",
+      "Dental laser system used for laser dentistry",
+      "IOPA X-ray imaging equipment for dental diagnostics",
+      "Dental chair (as pictured in clinic photographs)"
+    ],
+    "specialties": [
+      "familyMedicine",
+      "orthodontics",
+      "prosthodontics",
+      "cosmeticDentistry",
+      "endodontics",
+      "pediatricDentistry",
+      "dentistry"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Pearls Dental Clinic is a multispeciality dental clinic & Implant Centre in Dhanbad, Jharkhand, specializing in various dental services.",
+    "unsupported_claims": [
+      {
+        "field": "services",
+        "value": "Full Mouth Rehabilitation",
+        "reason": "Source does not mention Full Mouth Rehabilitation"
+      },
+      {
+        "field": "services",
+        "value": "Tooth-supported fixed bridges",
+        "reason": "Source does not mention Tooth-supported fixed bridges"
+      },
+      {
+        "field": "services",
+        "value": "Emergency dental services",
+        "reason": "Source does not mention Emergency dental services"
+      },
+      {
+        "field": "services",
+        "value": "Complete dentures and implant-supported dentures",
+        "reason": "Source does not mention Complete dentures and implant-supported dentures"
+      },
+      {
+        "field": "services",
+        "value": "Child dental care with treatment planning considering age and mood and behavior management",
+        "reason": "Source does not mention Child dental care with treatment planning"
+      },
+      {
+        "field": "services",
+        "value": "Cosmetic tooth filling",
+        "reason": "Source does not mention Cosmetic tooth filling"
+      },
+      {
+        "field": "services",
+        "value": "IOPA X-ray imaging for patients",
+        "reason": "Source does not mention IOPA X-ray imaging for patients"
+      },
+      {
+        "field": "services",
+        "value": "Dental Hygiene",
+        "reason": "Source does not mention Dental Hygiene"
+      },
+      {
+        "field": "services",
+        "value": "Cavity treatment using ART (Atraumatic Restorative Techniques)",
+        "reason": "Source does not mention Cavity treatment using ART"
+      },
+      {
+        "field": "services",
+        "value": "Cosmetic dentistry with Smile Design",
+        "reason": "Source does not mention Cosmetic dentistry with Smile Design"
+      },
+      {
+        "field": "services",
+        "value": "Root canal treatment",
+        "reason": "Source does not mention Root canal treatment"
+      },
+      {
+        "field": "services",
+        "value": "Dental & Oral X-ray",
+        "reason": "Source does not mention Dental & Oral X-ray"
+      },
+      {
+        "field": "services",
+        "value": "Implant",
+        "reason": "Source does not mention Implant"
+      },
+      {
+        "field": "services",
+        "value": "Surgical removal of cyst",
+        "reason": "Source does not mention Surgical removal of cyst"
+      },
+      {
+        "field": "services",
+        "value": "Extraction of tooth",
+        "reason": "Source does not mention Extraction of tooth"
+      },
+      {
+        "field": "services",
+        "value": "Scaling of teeth (cleaning)",
+        "reason": "Source does not mention Scaling of teeth"
+      },
+      {
+        "field": "services",
+        "value": "Treatment of jaw pain and fractured jaw",
+        "reason": "Source does not mention Treatment of jaw pain and fractured jaw"
+      },
+      {
+        "field": "services",
+        "value": "Oral Appliance Therapy",
+        "reason": "Source does not mention Oral Appliance Therapy"
+      },
+      {
+        "field": "services",
+        "value": "Anti Aging Dental Treatment including teeth contouring, whitening, removal of cracks and dark lines from front surface, replacement of missing teeth, closing gaps between teeth and gums, and reducing skin folds at corners of mouth",
+        "reason": "Source does not mention Anti Aging Dental Treatment"
+      },
+      {
+        "field": "services",
+        "value": "Orthodontics braces and aligners by visiting orthodontist",
+        "reason": "Source mentions orthodontic treatment but not specifically braces and aligners"
+      },
+      {
+        "field": "services",
+        "value": "Fixed ceramic teeth (crowns and bridges) restorations",
+        "reason": "Source does not mention Fixed ceramic teeth restorations"
+      }
+    ],
+    "extraction_confidence": "medium",
+    "raw_notes": "[\"Located in Dhanbad, Jharkhand\",\"Private hospital\",\"Established on May 10, 2010\",\"Has 14 years of dental service experience\",\"Has been operating for 15 years\",\"Pioneer in starting cashless facility in dental treatment\",\"Category: HEALTHCARE / Dentist\",\"Year of Experience: 15 yrs\",\"Empanelled with IIT (ISM) since 2016\",\"Establishment Year: 2010\",\"Has served 24,000 patients\",\"Member Since: 22-03-2025\",\"Dental clinic in Dhanbad, Jharkhand\",\"Cashless facility for CIMFR and IIT (ISM) employees, pensioners, and their dependents\",\"Empanelled with CIMFR since 2015\",\"Operates Branch-2 in Dhanbad, Jharkhand\",\"Specializes in cosmetic dentistry, pediatric dentistry, laser dentistry, and anti-aging dental treatments\",\"Has 5 qualified doctors\",\"Orthodontic treatment provided by visiting orthodontist\",\"Has 5 dental awards\",\"Dental clinic (inferred from name)\"]"
+  },
+  {
+    "facility_name": "32 Pearls Dental Clinic (Kaladhungi Rd, Unchapul, Haldwani, Uttarakhand 263139)",
+    "facility_type": "Clinic",
+    "facility_type_confidence": "high",
+    "ownership_type": "Private",
+    "state": "Uttarakhand",
+    "district": "Haldwani",
+    "pincode": "263139",
+    "beds": null,
+    "doctors": null,
+    "services": [
+      "best dental treatment services",
+      "Provides dentures to enhance smile and esthetics"
+    ],
+    "equipment": [],
+    "specialties": [
+      "familyMedicine",
+      "orthodontics",
+      "dentistry",
+      "prosthodontics"
+    ],
+    "staff_details": [],
+    "operating_hours": null,
+    "emergency_available": null,
+    "raw_summary": "32 Pearls Dental Clinic is a well-known clinic in Haldwani offering best dental treatment services with experienced dentists.",
+    "unsupported_claims": [],
+    "extraction_confidence": "high",
+    "raw_notes": "[]"
+  }
+]

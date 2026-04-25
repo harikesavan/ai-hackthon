@@ -11,7 +11,7 @@ import pandas as pd
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
-load_dotenv("../.env.local")
+load_dotenv(".env.local")
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 EXTRACT_PROMPT = """You are extracting structured healthcare facility data from an Indian facility record.
@@ -98,7 +98,7 @@ async def extract_one(row_text: str, row_structured: dict, semaphore: asyncio.Se
 
 
 async def main():
-    excel_path = "../data/VF_Hackathon_Dataset_India_Large.xlsx"
+    excel_path = "data/VF_Hackathon_Dataset_India_Large.xlsx"
     if not os.path.exists(excel_path):
         print(f"ERROR: Put the Excel file at {excel_path}")
         print("Download it from the hackathon challenge page.")
@@ -135,7 +135,7 @@ async def main():
 
     results = await asyncio.gather(*tasks)
 
-    output_path = "../data/extracted.json"
+    output_path = "data/extracted.json"
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2, default=str)
 

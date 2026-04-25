@@ -4,18 +4,22 @@ import { join } from "path";
 
 const AGENT_URL = process.env.AGENT_URL || "http://localhost:8000/query";
 const DEMO_CACHE_DIR = join(process.cwd(), "data", "demo-cache");
+const DATA_DIR = join(process.cwd(), "data");
 
-const CACHE_MAP: Record<string, string> = {
-  "c-section": "query1-patna-csection.json",
-  "patna": "query1-patna-csection.json",
-  "obstetric": "query1-patna-csection.json",
-  "pregnant": "query1-patna-csection.json",
-  "cardiac": "query2-rajasthan-cardiac.json",
-  "heart": "query2-rajasthan-cardiac.json",
-  "rajasthan": "query2-rajasthan-cardiac.json",
-  "chennai": "query3-chennai-surgery.json",
-  "surgery": "query3-chennai-surgery.json",
-  "tamil": "query3-chennai-surgery.json",
+const CACHE_MAP: Record<string, string[]> = {
+  "c-section": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  "patna": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  "obstetric": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  "pregnant": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  "cardiac": ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
+  "heart": ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
+  "rajasthan": ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
+  "chennai": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  "surgery": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  "tamil": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  "bihar": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  "emergency": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  "dental": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
 };
 
 type Highlight = { type: "red" | "green"; facilityId: number; lat: number; lon: number };
@@ -40,11 +44,13 @@ type AgentResponse = {
 
 function findCachedResponse(message: string): AgentResponse | null {
   const lower = message.toLowerCase();
-  for (const [keyword, filename] of Object.entries(CACHE_MAP)) {
+  for (const [keyword, filenames] of Object.entries(CACHE_MAP)) {
     if (lower.includes(keyword)) {
-      const filepath = join(DEMO_CACHE_DIR, filename);
-      if (existsSync(filepath)) {
-        return JSON.parse(readFileSync(filepath, "utf-8"));
+      for (const filename of filenames) {
+        const filepath = join(DATA_DIR, filename);
+        if (existsSync(filepath)) {
+          return JSON.parse(readFileSync(filepath, "utf-8"));
+        }
       }
     }
   }

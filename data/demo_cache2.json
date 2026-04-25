@@ -1,0 +1,41 @@
+{
+  "query": "Where can I get emergency cardiac care in Jaipur?",
+  "recommendation": {
+    "facilityId": 2085,
+    "name": "Sawai Man Singh (SMS) Hospital",
+    "lat": 26.8931,
+    "lon": 75.8157,
+    "trustMin": 0.98,
+    "reason": "This is a major tertiary care center in Jaipur with verified 24/7 emergency cardiac facilities and multiple cardiologists on staff."
+  },
+  "reasoning": [
+    {
+      "step": "search",
+      "text": "Searched for 24/7 cardiac emergency care in Jaipur."
+    },
+    {
+      "step": "check_trust",
+      "text": "Found several clinics claiming 24/7 cardiac care but with very low extraction confidence and missing staff details."
+    },
+    {
+      "step": "select_alternative",
+      "text": "Selected SMS Hospital as the highest-trust, verified alternative nearby."
+    }
+  ],
+  "warnings": [
+    {
+      "facilityId": 892,
+      "name": "Heart Care Centre & Pharmacy",
+      "lat": 26.9124,
+      "lon": 75.7873,
+      "trustMin": 0.15,
+      "reason": "This is registered as a pharmacy but claims advanced cardiac emergency services with 0 doctors listed (Rule: EMERGENCY_UNDERSTAFFED)."
+    }
+  ],
+  "mapState": {
+    "center": [75.8000, 26.9000],
+    "zoom": 11,
+    "highlightGreen": [2085],
+    "highlightRed": [892]
+  }
+}

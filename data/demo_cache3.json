@@ -1,0 +1,41 @@
+{
+  "query": "Show me pediatric facilities in Pune.",
+  "recommendation": {
+    "facilityId": 3412,
+    "name": "Surya Mother and Child Super Speciality Hospital",
+    "lat": 18.5284,
+    "lon": 73.8741,
+    "trustMin": 0.90,
+    "reason": "Highly trusted pediatric specialty hospital with verified pediatricians and fully equipped NICU/PICU."
+  },
+  "reasoning": [
+    {
+      "step": "search",
+      "text": "Searched for facilities with pediatric specialties in Pune."
+    },
+    {
+      "step": "filter_anomalies",
+      "text": "Flagged a general clinic claiming 15 unrelated specialties including complex pediatric surgery."
+    },
+    {
+      "step": "recommend",
+      "text": "Recommended Surya Super Speciality Hospital as it meets all IPHS guidelines for specialized pediatric care."
+    }
+  ],
+  "warnings": [
+    {
+      "facilityId": 1120,
+      "name": "City Health PolyClinic",
+      "lat": 18.5100,
+      "lon": 73.8500,
+      "trustMin": 0.40,
+      "reason": "Claims pediatric surgery alongside 14 other surgical specialties, but lists only 1 general practitioner. Peer anomaly: >95th percentile for claimed specialties vs similar clinics."
+    }
+  ],
+  "mapState": {
+    "center": [73.8600, 18.5200],
+    "zoom": 12,
+    "highlightGreen": [3412],
+    "highlightRed": [1120]
+  }
+}

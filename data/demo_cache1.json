@@ -1,0 +1,41 @@
+{
+  "query": "Find hospital near Patna for C-section",
+  "recommendation": {
+    "facilityId": 1042,
+    "name": "Patna Medical College and Hospital",
+    "lat": 25.6186,
+    "lon": 85.1610,
+    "trustMin": 0.95,
+    "reason": "This is a verified government hospital with a fully equipped maternity ward, active anesthesiologists, and high trust score."
+  },
+  "reasoning": [
+    {
+      "step": "search",
+      "text": "Found 12 facilities claiming C-section near Patna."
+    },
+    {
+      "step": "filter",
+      "text": "Evaluated trust scores. 5 facilities had trust scores below 0.5."
+    },
+    {
+      "step": "evaluate",
+      "text": "Selected the nearest high-confidence alternative with a fully equipped surgical setup."
+    }
+  ],
+  "warnings": [
+    {
+      "facilityId": 451,
+      "name": "Maa Kripa Clinic",
+      "lat": 25.5941,
+      "lon": 85.1376,
+      "trustMin": 0.30,
+      "reason": "This facility claims maternity and C-section services, but lists no anesthesiologists or surgical equipment (Rule: SURGERY_WITHOUT_ANESTHESIA)."
+    }
+  ],
+  "mapState": {
+    "center": [85.1500, 25.6000],
+    "zoom": 12,
+    "highlightGreen": [1042],
+    "highlightRed": [451]
+  }
+}

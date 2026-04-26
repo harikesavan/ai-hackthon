@@ -1,6 +1,6 @@
 "use client";
 
-import { capabilities, defaultMapState } from "@/data/facilities";
+import { defaultMapState } from "@/data/facilities";
 import type { MapState, MapViewMode } from "@/types/healthcare";
 import Image from "next/image";
 
@@ -12,7 +12,6 @@ type TopBarProps = {
   districts: string[];
   facilityCount: number;
   onViewChange: (view: MapViewMode) => void;
-  onCapabilityChange: (capability: MapState["capability"]) => void;
   onLocationChange: (key: keyof MapState["location"], value: string) => void;
   onTrustChange: (trust: number) => void;
   onAvailabilityChange: (key: keyof MapState["availability"], value: boolean) => void;
@@ -28,7 +27,6 @@ export const TopBar = ({
   districts,
   facilityCount,
   onViewChange,
-  onCapabilityChange,
   onLocationChange,
   onTrustChange,
   onAvailabilityChange,
@@ -110,33 +108,6 @@ export const TopBar = ({
               >
                 <option value="hospitals">Hospitals</option>
                 <option value="deserts">Deserts</option>
-              </select>
-            </label>
-
-            <label
-              aria-disabled={areHospitalControlsDisabled}
-              className={hospitalControlGroupClassName}
-            >
-              <span className={labelClassName}>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M8 1L2 4v4c0 3.5 2.5 6.5 6 7.5 3.5-1 6-4 6-7.5V4L8 1z" />
-                </svg>
-                Capability
-              </span>
-              <select
-                aria-label="Select capability layer"
-                className={selectClassName}
-                value={state.capability}
-                disabled={areHospitalControlsDisabled}
-                onChange={(event) =>
-                  onCapabilityChange(event.target.value as MapState["capability"])
-                }
-              >
-                {capabilities.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
               </select>
             </label>
 

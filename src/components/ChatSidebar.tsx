@@ -31,6 +31,16 @@ type Warning = {
   reason: string;
 };
 
+type Turn = {
+  id: string;
+  userMessage: string;
+  reasoningSteps: ReasoningStep[];
+  recommendation: Recommendation | null;
+  warnings: Warning[];
+  followups: string[];
+  isStreaming: boolean;
+};
+
 const suggestedQueries = [
   "Hospital near Patna for emergency C-section",
   "Cardiac care in Rajasthan",
@@ -66,6 +76,73 @@ const SendIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const TrashIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M9 3.75H15M4.5 6.75H19.5M18 6.75L17.48 18.07C17.43 19.2 16.5 20.1 15.37 20.1H8.63C7.5 20.1 6.57 19.2 6.52 18.07L6 6.75M10 10.5V16.5M14 10.5V16.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ReasoningCollapse = ({
+  turnId,
+  steps,
+  isDarkMode,
+}: {
+  turnId: string;
+  steps: ReasoningStep[];
+  isDarkMode: boolean;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className={
+        "rounded-2xl border " +
+        (isDarkMode ? "border-white/8 bg-slate-800/40" : "border-slate-200/70 bg-slate-50/60")
+      }
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((p) => !p)}
+        className={
+          "flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-xs font-medium transition-colors " +
+          (isDarkMode ? "text-slate-300 hover:text-slate-100" : "text-slate-600 hover:text-slate-900")
+        }
+      >
+        <span className="text-[10px]">{expanded ? "▼" : "▶"}</span>
+        <span>Reasoning trace ({steps.length} steps)</span>
+      </button>
+      {expanded && (
+        <div className="space-y-1.5 px-4 pb-3">
+          {steps.map((step, index) => {
+            const isWarning = step.step === "warning";
+            const isRecommend = step.step === "recommend";
+            const dotClass = isWarning ? "bg-red-400" : isRecommend ? "bg-emerald-400" : "bg-cyan-400";
+            const textClass = isWarning
+              ? isDarkMode ? "text-red-200" : "text-red-700"
+              : isDarkMode ? "text-slate-200" : "text-slate-700";
+
+            return (
+              <div key={`${turnId}-reason-${index}`} className="flex gap-2 py-0.5 text-xs leading-relaxed">
+                <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider opacity-50">{step.step}</span>
+                  <p className={textClass}>{step.text}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ChatSidebar({
   isDarkMode,
   onSelectFacility,
@@ -75,11 +152,7 @@ export default function ChatSidebar({
   const [hasInteracted, setHasInteracted] = useState(false);
   const [query, setQuery] = useState("");
   const [isSubmittingQuery, setIsSubmittingQuery] = useState(false);
-  const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([]);
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
-  const [warnings, setWarnings] = useState<Warning[]>([]);
-  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
-  const [finalErrorMessage, setFinalErrorMessage] = useState<string | null>(null);
+  const [turns, setTurns] = useState<Turn[]>([]);
   const [mode, setMode] = useState<"demo" | "live">("demo");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const floatingQueryRef = useRef<HTMLTextAreaElement>(null);
@@ -104,7 +177,7 @@ export default function ChatSidebar({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [reasoningSteps.length, recommendation]);
+  }, [turns]);
 
   useEffect(() => {
     resizeTextarea(floatingQueryRef.current);
@@ -119,27 +192,110 @@ export default function ChatSidebar({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  const updateTurn = (id: string, patch: Partial<Turn>) => {
+    setTurns((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  };
+
+  const appendReasoning = (id: string, step: ReasoningStep) => {
+    setTurns((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, reasoningSteps: [...t.reasoningSteps, step] } : t,
+      ),
+    );
+  };
+
+  const clearConversation = () => {
+    setTurns([]);
+    setHasInteracted(false);
+  };
+
+  const buildFollowupContext = (turn: Turn): string => {
+    const diagStep = turn.reasoningSteps.find((s) => s.step === "diagnose");
+    const locStep = turn.reasoningSteps.find((s) => s.step === "locate");
+    const parts: string[] = [];
+
+    if (diagStep) parts.push(diagStep.text);
+    if (locStep) parts.push(locStep.text);
+    if (turn.recommendation) {
+      parts.push(
+        `Previous recommendation: ${turn.recommendation.name} in ${turn.recommendation.district ?? turn.recommendation.state ?? "unknown"}`,
+      );
+    }
+
+    return parts.length > 0 ? `[Context from previous search: ${parts.join(". ")}] ` : "";
+  };
+
   const handleSubmit = async (nextQuery?: string) => {
     const message = (nextQuery ?? query).trim();
     if (!message) {
       return;
     }
 
+    const turnId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const newTurn: Turn = {
+      id: turnId,
+      userMessage: message,
+      reasoningSteps: [],
+      recommendation: null,
+      warnings: [],
+      followups: [],
+      isStreaming: true,
+    };
+
     setIsOpen(true);
     setHasInteracted(true);
-    setReasoningSteps([]);
-    setRecommendation(null);
-    setWarnings([]);
-    setIsDetailsExpanded(false);
-    setFinalErrorMessage(null);
     setIsSubmittingQuery(true);
     setQuery("");
+
+    let history: Array<{ role: "user" | "assistant"; content: string }> = [];
+    setTurns((prev) => {
+      history = prev.flatMap((t) => {
+        const items: Array<{ role: "user" | "assistant"; content: string }> = [
+          { role: "user", content: t.userMessage },
+        ];
+        const diagnosisStep = t.reasoningSteps.find((s) => s.step === "diagnose");
+        const locationStep = t.reasoningSteps.find((s) => s.step === "locate");
+        const parts: string[] = [];
+
+        if (diagnosisStep) parts.push(diagnosisStep.text);
+        if (locationStep) parts.push(locationStep.text);
+        if (t.recommendation) {
+          parts.push(
+            `Recommended: ${t.recommendation.name} (${t.recommendation.district ?? ""}, ${t.recommendation.state ?? ""}) — trust ${Math.round(t.recommendation.trustMin * 100)}%`,
+          );
+        }
+
+        if (parts.length > 0) {
+          items.push({
+            role: "assistant",
+            content: parts.join(" | "),
+          });
+        }
+        return items;
+      });
+      return [...prev, newTurn];
+    });
+
+    // Prepend context from last turn to every follow-up so the agent never loses condition/location
+    let enrichedMessage = message;
+    setTurns((prev) => {
+      if (prev.length > 1) {
+        const lastCompletedTurn = [...prev].reverse().find((t) => !t.isStreaming && t.reasoningSteps.length > 0);
+        if (lastCompletedTurn) {
+          const ctx = buildFollowupContext(lastCompletedTurn);
+          if (ctx && !message.startsWith("[Context")) {
+            enrichedMessage = ctx + message;
+          }
+        }
+      }
+      return prev;
+    });
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, mode }),
+        body: JSON.stringify({ message: enrichedMessage, mode, history }),
       });
 
       if (!response.ok || !response.body) {
@@ -167,14 +323,21 @@ export default function ChatSidebar({
               const data = JSON.parse(line.slice(6));
               switch (currentEvent) {
                 case "reasoning":
-                  setReasoningSteps((prev) => [...prev, data as ReasoningStep]);
+                  appendReasoning(turnId, data as ReasoningStep);
                   break;
                 case "recommendation":
-                  setRecommendation(data as Recommendation);
+                  updateTurn(turnId, { recommendation: data as Recommendation });
                   break;
                 case "warnings":
-                  setWarnings(data as Warning[]);
+                  updateTurn(turnId, { warnings: data as Warning[] });
                   break;
+                case "followup": {
+                  const payload = data as { questions?: string[] };
+                  if (Array.isArray(payload.questions)) {
+                    updateTurn(turnId, { followups: payload.questions });
+                  }
+                  break;
+                }
               }
             } catch {
               // skip malformed JSON
@@ -186,15 +349,12 @@ export default function ChatSidebar({
     } catch {
       const errorMessage =
         "Something went wrong while streaming the analysis. Please try again.";
-      setReasoningSteps((prev) => [
-        ...prev,
-        {
-          step: "warning",
-          text: errorMessage,
-        },
-      ]);
-      setFinalErrorMessage(errorMessage);
+      appendReasoning(turnId, {
+        step: "warning",
+        text: errorMessage,
+      });
     } finally {
+      updateTurn(turnId, { isStreaming: false });
       setIsSubmittingQuery(false);
     }
   };
@@ -318,10 +478,10 @@ export default function ChatSidebar({
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/12 text-cyan-400">
             <SparkleIcon className="h-5 w-5" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold">AI Analysis</p>
-            <p className={`text-[11px] ${mutedTextClass}`}>One answer card with optional reasoning details</p>
-          </div>
+           <div className="min-w-0 flex-1">
+             <p className="text-base font-semibold">AI Analysis</p>
+             <p className={`text-[11px] ${mutedTextClass}`}>Multi-turn guidance with streamed reasoning</p>
+           </div>
           <div
             role="group"
             aria-label="Agent mode"
@@ -363,21 +523,36 @@ export default function ChatSidebar({
               Live
             </button>
           </div>
-          <button
-            type="button"
-            aria-label="Close AI analysis"
-            onClick={() => setIsOpen(false)}
-            className={
-              "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
-              (isDarkMode ? "hover:bg-white/8" : "hover:bg-slate-900/6")
-            }
-          >
-            <CloseIcon className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {turns.length > 0 && (
+              <button
+                type="button"
+                aria-label="Clear conversation"
+                onClick={clearConversation}
+                className={
+                  "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
+                  (isDarkMode ? "hover:bg-white/8" : "hover:bg-slate-900/6")
+                }
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label="Close AI analysis"
+              onClick={() => setIsOpen(false)}
+              className={
+                "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
+                (isDarkMode ? "hover:bg-white/8" : "hover:bg-slate-900/6")
+              }
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          {reasoningSteps.length === 0 && !recommendation && !isSubmittingQuery && (
+          {turns.length === 0 && !isSubmittingQuery && (
             <section className="space-y-3">
               <p className={`text-xs ${mutedTextClass}`}>Try asking:</p>
               <div className="flex flex-col gap-2">
@@ -404,168 +579,160 @@ export default function ChatSidebar({
             </section>
           )}
 
-          {isSubmittingQuery && reasoningSteps.length === 0 && (
-            <div
-              className={
-                "inline-flex items-center gap-1.5 rounded-2xl px-4 py-3 animate-fade-in " +
-                (isDarkMode ? "bg-slate-800" : "bg-slate-100")
-              }
-            >
-              {[0, 150, 300].map((delay) => (
-                <span
-                  key={delay}
-                  className="h-2 w-2 rounded-full bg-cyan-400 animate-typing-dot"
-                  style={{ animationDelay: `${delay}ms` }}
-                />
-              ))}
-            </div>
-          )}
+          {turns.map((turn) => {
+            const latestStep = turn.reasoningSteps.length > 0
+              ? turn.reasoningSteps[turn.reasoningSteps.length - 1]
+              : null;
 
-          {(recommendation || reasoningSteps.length > 0 || warnings.length > 0) && (
-            <article
-              className={
-                "animate-message-in rounded-2xl p-4 " +
-                (isDarkMode
-                  ? "bg-slate-800/40"
-                  : "bg-slate-100/70")
-              }
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-cyan-500">
-                  Final answer
-                </p>
-                {isSubmittingQuery && (
-                  <span className={`text-[11px] ${mutedTextClass}`}>Updating...</span>
-                )}
+            return (
+            <section key={turn.id} className="space-y-3">
+              <div className="flex justify-end">
+                <div
+                  className={
+                    "animate-message-in max-w-[88%] rounded-[1.4rem] rounded-br-md px-4 py-3 text-sm leading-relaxed shadow-lg " +
+                    (isDarkMode
+                      ? "border border-cyan-400/15 bg-cyan-500/12 text-cyan-50"
+                      : "border border-cyan-200 bg-cyan-50/95 text-cyan-950")
+                  }
+                >
+                  {turn.userMessage}
+                </div>
               </div>
 
-              {recommendation ? (
-                <>
-                  <p className="mt-2 text-sm font-bold">{recommendation.name}</p>
+              {turn.isStreaming && turn.reasoningSteps.length === 0 && (
+                <div
+                  className={
+                    "inline-flex items-center gap-1.5 rounded-2xl px-4 py-3 animate-fade-in " +
+                    (isDarkMode ? "bg-slate-800" : "bg-slate-100")
+                  }
+                >
+                  {[0, 150, 300].map((delay) => (
+                    <span
+                      key={delay}
+                      className="h-2 w-2 rounded-full bg-cyan-400 animate-typing-dot"
+                      style={{ animationDelay: `${delay}ms` }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {turn.isStreaming && latestStep && (
+                <div
+                  className={
+                    "animate-fade-in rounded-2xl px-4 py-2.5 text-xs " +
+                    (isDarkMode ? "bg-slate-800/60 text-slate-300" : "bg-slate-100/80 text-slate-600")
+                  }
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400 animate-typing-dot" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">{latestStep.step}</span>
+                  </div>
+                  <p className="mt-1 leading-relaxed">{latestStep.text}</p>
+                </div>
+              )}
+
+              {turn.recommendation && (
+                <article
+                  className={
+                    "animate-message-in rounded-3xl border p-4 shadow-lg " +
+                    (isDarkMode
+                      ? "border-emerald-500/30 bg-emerald-500/10"
+                      : "border-emerald-200 bg-emerald-50/90")
+                  }
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">
+                      Recommendation
+                    </p>
+                    {turn.isStreaming && (
+                      <span className={`text-[11px] ${mutedTextClass}`}>Streaming...</span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm font-bold">{turn.recommendation.name}</p>
                   <p className="mt-1 text-xs opacity-80">
-                    {[recommendation.type, recommendation.district, recommendation.state]
+                    {[turn.recommendation.type, turn.recommendation.district, turn.recommendation.state]
                       .filter(Boolean)
                       .join(" • ")}
                   </p>
                   <p
                     className={
                       "mt-1 text-xs font-medium " +
-                      (recommendation.trustMin >= 0.75
-                        ? "text-emerald-500"
-                        : "text-amber-500")
+                      (turn.recommendation.trustMin >= 0.75 ? "text-emerald-500" : "text-amber-500")
                     }
                   >
-                    Confidence: {Math.round(recommendation.trustMin * 100)}%
+                    Confidence: {Math.round(turn.recommendation.trustMin * 100)}%
                   </p>
-                  <p className="mt-2 text-xs opacity-75">{recommendation.reason}</p>
+                  <p className="mt-2 text-xs opacity-80">{turn.recommendation.reason}</p>
                   {(onSelectFacility || onFlyToLocation) && (
                     <button
                       type="button"
                       onClick={() => {
-                        onSelectFacility?.(String(recommendation.facilityId));
-                        onFlyToLocation?.(recommendation.lat, recommendation.lon);
+                        onSelectFacility?.(String(turn.recommendation?.facilityId));
+                        onFlyToLocation?.(turn.recommendation?.lat ?? 0, turn.recommendation?.lon ?? 0);
                       }}
-                      className="mt-3 cursor-pointer whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+                      className="mt-4 cursor-pointer whitespace-nowrap rounded-xl bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
                     >
                       View on map
                     </button>
                   )}
-                </>
-              ) : finalErrorMessage ? (
-                <p className="mt-2 text-xs text-red-500">{finalErrorMessage}</p>
-              ) : (
-                <p className={`mt-2 text-xs ${mutedTextClass}`}>
-                  {isSubmittingQuery
-                    ? "The model is still reasoning. Expand details to see interim steps."
-                    : "No recommendation available for this query."}
-                </p>
+                </article>
               )}
 
-              {(reasoningSteps.length > 0 || warnings.length > 0) && (
-                <section className="mt-3">
-                  <button
-                    type="button"
-                    aria-label={isDetailsExpanded ? "Hide reasoning and steps" : "Show reasoning and steps"}
-                    onClick={() => setIsDetailsExpanded((prev) => !prev)}
-                    className={
-                      "inline-flex cursor-pointer items-center gap-2 text-xs font-medium transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
-                      (isDarkMode
-                        ? "text-slate-300 hover:opacity-80"
-                        : "text-slate-600 hover:opacity-80")
-                    }
-                  >
-                    <span className="text-[10px]">
-                      {isDetailsExpanded ? "▼" : "▶"}
-                    </span>
-                    <span>
-                      {isDetailsExpanded ? "Hide" : "Show"} reasoning and steps
-                      {reasoningSteps.length > 0 ? ` (${reasoningSteps.length})` : ""}
-                    </span>
-                  </button>
-
-                  {isDetailsExpanded && (
-                    <div
+              {turn.warnings.length > 0 && (
+                <div className="space-y-2">
+                  {turn.warnings.map((warning, index) => (
+                    <article
+                      key={`${turn.id}-${warning.facilityId}-${index}`}
                       className={
-                        "mt-2 space-y-2 border-l pl-3 " +
-                        (isDarkMode ? "border-white/10" : "border-slate-300/70")
+                        "animate-fade-in rounded-2xl border px-4 py-3 text-xs leading-relaxed shadow-sm " +
+                        (isDarkMode
+                          ? "border-red-500/25 bg-red-500/10 text-red-100"
+                          : "border-red-200 bg-red-50 text-red-700")
                       }
                     >
-                      {reasoningSteps.map((step, index) => {
-                        const isWarning = step.step === "warning";
-                        const isRecommend = step.step === "recommend";
-                        const dotClass = isWarning
-                          ? "bg-red-400"
-                          : isRecommend
-                            ? "bg-emerald-400"
-                            : "bg-cyan-400";
-                        const textClass = isWarning
-                          ? isDarkMode
-                            ? "text-red-200"
-                            : "text-red-700"
-                          : isDarkMode
-                            ? "text-slate-200"
-                            : "text-slate-700";
+                      <p className="font-semibold">{warning.name}</p>
+                      <p className="mt-1 opacity-90">Confidence: {Math.round(warning.trustMin * 100)}%</p>
+                      <p className="mt-1">{warning.reason}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
 
-                        return (
-                          <article
-                            key={`${step.step}-${index}-${step.text}`}
-                            className="flex gap-2 py-0.5 text-xs leading-relaxed"
-                          >
-                            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
-                            <div>
-                              <p className="text-[10px] font-medium uppercase tracking-wider opacity-60">
-                                {step.step}
-                              </p>
-                              <p className={textClass}>{step.text}</p>
-                            </div>
-                          </article>
-                        );
-                      })}
+              {!turn.isStreaming && turn.reasoningSteps.length > 0 && (
+                <ReasoningCollapse
+                  turnId={turn.id}
+                  steps={turn.reasoningSteps}
+                  isDarkMode={isDarkMode}
+                />
+              )}
 
-                      {warnings.length > 0 && (
-                        <div className="space-y-1.5 pt-1">
-                          {warnings.map((warning, index) => (
-                            <article
-                              key={`${warning.facilityId}-${index}`}
-                              className="text-xs leading-relaxed"
-                            >
-                              <p className="font-semibold text-red-500">{warning.name}</p>
-                              <p className="text-red-500/90">
-                                Confidence: {Math.round(warning.trustMin * 100)}%
-                              </p>
-                              <p className={isDarkMode ? "text-red-200/90" : "text-red-700"}>
-                                {warning.reason}
-                              </p>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {turn.followups.length > 0 && (
+                <section className="space-y-2">
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${mutedTextClass}`}>
+                    Refine your search
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {turn.followups.map((followup) => (
+                      <button
+                        key={`${turn.id}-${followup}`}
+                        type="button"
+                        onClick={() => void handleSubmit(buildFollowupContext(turn) + followup)}
+                        className={
+                          "rounded-full px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
+                          (isDarkMode
+                            ? "border border-cyan-500/25 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                            : "border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100")
+                        }
+                      >
+                        {followup}
+                      </button>
+                    ))}
+                  </div>
                 </section>
               )}
-            </article>
-          )}
+            </section>
+            );
+          })}
 
           <div ref={messagesEndRef} />
         </div>

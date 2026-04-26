@@ -52,7 +52,8 @@ type CachedResponse = {
 function findCachedResponse(message: string): CachedResponse | null {
   const lower = message.toLowerCase();
   for (const [keyword, filenames] of Object.entries(CACHE_MAP)) {
-    if (lower.includes(keyword)) {
+    const pattern = new RegExp(`(?:^|\\s|[^a-z])${keyword}(?:$|\\s|[^a-z])`);
+    if (pattern.test(lower)) {
       for (const filename of filenames) {
         const filepath = join(DATA_DIR, filename);
         if (existsSync(filepath)) {

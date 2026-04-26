@@ -132,6 +132,47 @@ function extractCityCoords(query: string) {
   return null;
 }
 
+const _geocodeCache = new Map<string, { lat: number; lon: number; state: string; name: string } | null>();
+
+async function geocodeLocation(
+  placeName: string | null | undefined,
+): Promise<{ lat: number; lon: number; state: string; name: string } | null> {
+  if (!placeName || placeName.length < 2) return null;
+
+  const key = placeName.toLowerCase().trim();
+  if (_geocodeCache.has(key)) return _geocodeCache.get(key) ?? null;
+
+  const local = extractCityCoords(key);
+  if (local) {
+    _geocodeCache.set(key, local);
+    return local;
+  }
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(placeName + ", India")}&format=json&limit=1&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "ArogyaMap-Hackathon/1.0" },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) { _geocodeCache.set(key, null); return null; }
+    const data = (await res.json()) as Array<{
+      lat: string; lon: string;
+      address?: { state?: string; state_district?: string; city?: string; town?: string };
+      display_name?: string;
+    }>;
+    if (!data[0]) { _geocodeCache.set(key, null); return null; }
+    const hit = data[0];
+    const state = hit.address?.state ?? "";
+    const name = hit.address?.city ?? hit.address?.town ?? hit.address?.state_district ?? placeName;
+    const result = { lat: parseFloat(hit.lat), lon: parseFloat(hit.lon), state, name: name.toLowerCase() };
+    _geocodeCache.set(key, result);
+    return result;
+  } catch {
+    _geocodeCache.set(key, null);
+    return null;
+  }
+}
+
 function extractAvoidLocations(query: string): string[] {
   const lower = query.toLowerCase();
   const avoidPattern =
@@ -600,11 +641,31 @@ export async function streamAgent(
   const pincode = analysis.pincode || extractPincode(query);
   const pincodeLoc = lookupPincode(pincode);
   const cityMatch = extractCityCoords(query);
+  let historyCityMatch = cityMatch;
 
-  const resolvedState = pincodeLoc?.state ?? analysis.state ?? cityMatch?.state ?? null;
-  let resolvedDistrict = pincodeLoc?.district ?? analysis.district ?? cityMatch?.name ?? null;
-  const centerLat = pincodeLoc?.lat ?? cityMatch?.lat ?? null;
-  const centerLon = pincodeLoc?.lon ?? cityMatch?.lon ?? null;
+  if (!historyCityMatch) {
+    for (let i = history.length - 1; i >= 0; i--) {
+      const match = extractCityCoords(history[i].content);
+      if (match) {
+        historyCityMatch = match;
+        break;
+      }
+    }
+  }
+
+  const geoTarget = analysis.district ?? analysis.state ?? null;
+  if (!pincodeLoc && !historyCityMatch && geoTarget) {
+    const geocoded = await geocodeLocation(geoTarget);
+    if (geocoded) {
+      historyCityMatch = geocoded;
+      emit("reasoning", { step: "locate", text: `Geocoded "${geoTarget}" → ${geocoded.name}, ${geocoded.state} (${geocoded.lat.toFixed(2)}°N, ${geocoded.lon.toFixed(2)}°E).` });
+    }
+  }
+
+  const resolvedState = pincodeLoc?.state ?? analysis.state ?? historyCityMatch?.state ?? null;
+  let resolvedDistrict = pincodeLoc?.district ?? analysis.district ?? historyCityMatch?.name ?? null;
+  const centerLat = pincodeLoc?.lat ?? historyCityMatch?.lat ?? null;
+  const centerLon = pincodeLoc?.lon ?? historyCityMatch?.lon ?? null;
   const avoidCities = extractAvoidLocations(query);
 
   if (resolvedDistrict) {

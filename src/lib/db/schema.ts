@@ -57,8 +57,26 @@ export const facilities = pgTable("facilities", {
   // Combined (min of 3 signals, for map coloring)
   trustMin: real("trust_min"), // 0.0 to 1.0
 
+  trustBreakdown: jsonb("trust_breakdown").$type<{
+    sourceSupport: { score: number; max: number; reason: string };
+    iphsConflict: { score: number; max: number; reason: string };
+    peerAnomaly: { score: number; max: number; reason: string };
+    total: number;
+  }>(),
+
+  evidenceSpans: jsonb("evidence_spans").$type<
+    {
+      claim: string;
+      claimField: "services" | "specialties" | "equipment" | "staff" | "facilityType";
+      supportStatus: "verified" | "unsupported" | "contradicted" | "insufficient";
+      sourceSentence: string | null;
+      extractionRationale: string;
+      iphsRuleId?: string;
+    }[]
+  >(),
+
   // Human review
-  reviewStatus: text("review_status").default("pending"), // pending, confirmed_real, confirmed_ghost, needs_visit
+  reviewStatus: text("review_status").default("pending"), // pending, confirmed_real, confirmed_ghost, needs_visit, insufficient_data
   reviewedAt: timestamp("reviewed_at"),
 
   // Raw data

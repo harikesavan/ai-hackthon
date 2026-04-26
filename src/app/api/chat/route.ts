@@ -1,40 +1,47 @@
 import { NextRequest } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { streamAgent } from "@/lib/agent";
 
-const AGENT_URL = process.env.AGENT_URL || "http://localhost:8000/query";
-const DEMO_CACHE_DIR = join(process.cwd(), "data", "demo-cache");
 const DATA_DIR = join(process.cwd(), "data");
 
 const CACHE_MAP: Record<string, string[]> = {
   "c-section": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
-  "patna": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
-  "obstetric": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
-  "pregnant": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
-  "cardiac": ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
-  "heart": ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
-  "rajasthan": ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
-  "chennai": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
-  "surgery": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
-  "tamil": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
-  "bihar": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
-  "emergency": ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
-  "dental": ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  patna: ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  obstetric: ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  pregnant: ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  cardiac: ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
+  heart: ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
+  rajasthan: ["demo-cache/query2-rajasthan-cardiac.json", "demo_cache2.json"],
+  chennai: ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  surgery: ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  tamil: ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
+  bihar: ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  emergency: ["demo-cache/query1-patna-csection.json", "demo_cache1.json"],
+  dental: ["demo-cache/query3-chennai-surgery.json", "demo_cache3.json"],
 };
 
 type Highlight = { type: "red" | "green"; facilityId: number; lat: number; lon: number };
 type ReasoningStep = { step: string; text: string; delay?: number; highlight?: Highlight };
 type Warning = { facilityId: number; name: string; trustMin: number; reason: string };
 type Recommendation = {
-  facilityId: number; name: string; type: string;
-  district: string; state: string; lat: number; lon: number;
-  trustMin: number; reason: string;
+  facilityId: number;
+  name: string;
+  type?: string;
+  district?: string;
+  state?: string;
+  lat: number;
+  lon: number;
+  trustMin: number;
+  reason: string;
 };
 type MapStateType = {
-  center: [number, number]; zoom: number;
-  highlightGreen: number[]; highlightRed: number[];
+  center: [number, number];
+  zoom: number;
+  highlightGreen: number[];
+  highlightRed: number[];
 };
-type AgentResponse = {
+type CachedResponse = {
   query: string;
   recommendation: Recommendation | null;
   reasoning: ReasoningStep[];
@@ -42,7 +49,7 @@ type AgentResponse = {
   mapState: MapStateType | null;
 };
 
-function findCachedResponse(message: string): AgentResponse | null {
+function findCachedResponse(message: string): CachedResponse | null {
   const lower = message.toLowerCase();
   for (const [keyword, filenames] of Object.entries(CACHE_MAP)) {
     if (lower.includes(keyword)) {
@@ -57,42 +64,10 @@ function findCachedResponse(message: string): AgentResponse | null {
   return null;
 }
 
-async function getAgentResponse(message: string, demoMode: boolean): Promise<AgentResponse> {
-  if (demoMode) {
-    const cached = findCachedResponse(message);
-    if (cached) return cached;
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
-
-    const res = await fetch(AGENT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-    if (!res.ok) throw new Error(`Agent returned ${res.status}`);
-    return await res.json();
-  } catch {
-    const cached = findCachedResponse(message);
-    if (cached) return cached;
-
-    return {
-      query: message,
-      recommendation: null,
-      reasoning: [{ step: "error", text: "No matching data found for this query. Try one of the suggested questions like 'Hospital near Patna for C-section', 'Cardiac care in Rajasthan', or 'Surgery facility in Chennai'." }],
-      warnings: [],
-      mapState: null,
-    };
-  }
-}
+type ChatHistoryEntry = { role: "user" | "assistant"; content: string };
 
 export async function POST(request: NextRequest) {
-  const { message, demoMode } = await request.json();
+  const { message, mode, demoMode, history } = await request.json();
 
   if (!message) {
     return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -101,43 +76,79 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const data = await getAgentResponse(message, demoMode ?? false);
+  const resolvedMode: "demo" | "live" =
+    mode === "live" || mode === "demo" ? mode : demoMode === false ? "live" : "demo";
+
+  const safeHistory: ChatHistoryEntry[] = Array.isArray(history)
+    ? history
+        .filter(
+          (item): item is ChatHistoryEntry =>
+            typeof item === "object" &&
+            item !== null &&
+            (item.role === "user" || item.role === "assistant") &&
+            typeof item.content === "string",
+        )
+        .slice(-10)
+    : [];
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: string, payload: unknown) => {
-        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`));
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`),
+        );
       };
 
-      send("query", { query: data.query });
+      try {
+        if (resolvedMode === "demo") {
+          const cached = findCachedResponse(message);
+          if (!cached) {
+            send("query", { query: message });
+            send("reasoning", {
+              step: "error",
+              text: "Demo mode only supports preset queries. Try 'Hospital near Patna for C-section', 'Cardiac care in Rajasthan', 'Surgery facility in Chennai', or switch to Live mode.",
+            });
+            send("done", {});
+            controller.close();
+            return;
+          }
 
-      for (const step of data.reasoning) {
-        const delay = (step as ReasoningStep).delay ?? 800;
-        await new Promise((r) => setTimeout(r, delay));
-        send("reasoning", { step: step.step, text: step.text });
-
-        if ((step as ReasoningStep).highlight) {
-          send("highlight", (step as ReasoningStep).highlight);
+          send("query", { query: cached.query });
+          for (const step of cached.reasoning) {
+            const delay = step.delay ?? 800;
+            await new Promise((r) => setTimeout(r, delay));
+            send("reasoning", { step: step.step, text: step.text });
+            if (step.highlight) {
+              send("highlight", step.highlight);
+            }
+          }
+          if (cached.warnings.length > 0) {
+            await new Promise((r) => setTimeout(r, 400));
+            send("warnings", cached.warnings);
+          }
+          if (cached.recommendation) {
+            await new Promise((r) => setTimeout(r, 400));
+            send("recommendation", cached.recommendation);
+          }
+          if (cached.mapState) {
+            send("mapState", cached.mapState);
+          }
+          send("done", {});
+          controller.close();
+          return;
         }
-      }
 
-      if (data.warnings.length > 0) {
-        await new Promise((r) => setTimeout(r, 400));
-        send("warnings", data.warnings);
+        await streamAgent(message, safeHistory, send);
+        controller.close();
+      } catch (error) {
+        send("reasoning", {
+          step: "error",
+          text: `Live agent failed: ${error instanceof Error ? error.message : "unknown error"}. Try again or switch to Demo mode.`,
+        });
+        send("done", {});
+        controller.close();
       }
-
-      if (data.recommendation) {
-        await new Promise((r) => setTimeout(r, 400));
-        send("recommendation", data.recommendation);
-      }
-
-      if (data.mapState) {
-        send("mapState", data.mapState);
-      }
-
-      send("done", {});
-      controller.close();
     },
   });
 

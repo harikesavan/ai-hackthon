@@ -33,6 +33,18 @@ export type AgentRecommendation = {
   lon: number;
   trustMin: number;
   reason: string;
+  verified: boolean;
+};
+export type StabilizationFacility = {
+  facilityId: number;
+  name: string;
+  type?: string;
+  district?: string;
+  state?: string;
+  lat: number;
+  lon: number;
+  trustMin: number;
+  distanceKm: number;
 };
 export type AgentResponse = {
   query: string;
@@ -614,6 +626,56 @@ async function searchByStateOnly(resolvedState: string) {
     .limit(500);
 }
 
+async function findNearestStabilization(
+  centerLat: number,
+  centerLon: number,
+  resolvedState: string | null,
+): Promise<StabilizationFacility | null> {
+  const conditions = [isNotNull(facilities.lat), isNotNull(facilities.lon)];
+  if (resolvedState) {
+    conditions.push(ilike(facilities.state, `%${resolvedState}%`));
+  }
+
+  const rows = await db
+    .select({
+      id: facilities.id,
+      name: facilities.facilityName,
+      type: facilities.facilityType,
+      state: facilities.state,
+      district: facilities.district,
+      lat: facilities.lat,
+      lon: facilities.lon,
+      trustMin: facilities.trustMin,
+      emergencyAvailable: facilities.emergencyAvailable,
+    })
+    .from(facilities)
+    .where(and(...conditions))
+    .limit(500);
+
+  let nearest: StabilizationFacility | null = null;
+  let nearestDist = Infinity;
+
+  for (const row of rows) {
+    if (row.lat === null || row.lon === null) continue;
+    const dist = distanceKm(centerLat, centerLon, row.lat, row.lon);
+    if (dist < nearestDist && dist <= 20) {
+      nearestDist = dist;
+      nearest = {
+        facilityId: row.id,
+        name: row.name,
+        type: row.type ?? undefined,
+        district: row.district ?? undefined,
+        state: row.state ?? undefined,
+        lat: row.lat,
+        lon: row.lon,
+        trustMin: row.trustMin ?? 0,
+        distanceKm: Math.round(dist * 10) / 10,
+      };
+    }
+  }
+  return nearest;
+}
+
 export async function streamAgent(
   query: string,
   history: HistoryEntry[],
@@ -653,12 +715,21 @@ export async function streamAgent(
     }
   }
 
-  const geoTarget = analysis.district ?? analysis.state ?? null;
-  if (!pincodeLoc && !historyCityMatch && geoTarget) {
-    const geocoded = await geocodeLocation(geoTarget);
-    if (geocoded) {
-      historyCityMatch = geocoded;
-      emit("reasoning", { step: "locate", text: `Geocoded "${geoTarget}" → ${geocoded.name}, ${geocoded.state} (${geocoded.lat.toFixed(2)}°N, ${geocoded.lon.toFixed(2)}°E).` });
+  if (!historyCityMatch && !pincodeLoc) {
+    const geoTargets = [
+      analysis.district,
+      analysis.state,
+      ...history.map((h) => h.content),
+      query,
+    ].filter(Boolean) as string[];
+
+    for (const target of geoTargets) {
+      const geocoded = await geocodeLocation(target);
+      if (geocoded) {
+        historyCityMatch = geocoded;
+        emit("reasoning", { step: "locate", text: `Geocoded "${target}" → ${geocoded.name}, ${geocoded.state} (${geocoded.lat.toFixed(2)}°N, ${geocoded.lon.toFixed(2)}°E).` });
+        break;
+      }
     }
   }
 
@@ -676,6 +747,28 @@ export async function streamAgent(
     step: "locate",
     text: `Location: ${resolvedDistrict ?? "any district"}, ${resolvedState ?? "any state"}${pincode ? ` (pincode ${pincode})` : ""}. Reasonable travel: ${analysis.maxReasonableDistanceKm} km.${avoidCities.length > 0 ? ` Avoiding: ${avoidCities.join(", ")}.` : ""}`,
   });
+
+  let stabilizationFacility: StabilizationFacility | null = null;
+  if (analysis.urgency === "emergency" && centerLat !== null && centerLon !== null) {
+    emit("reasoning", {
+      step: "emergency",
+      text: "EMERGENCY detected — searching for nearest facility for immediate stabilization while finding specialist care.",
+    });
+
+    stabilizationFacility = await findNearestStabilization(centerLat, centerLon, resolvedState);
+
+    if (stabilizationFacility) {
+      emit("reasoning", {
+        step: "emergency",
+        text: `Nearest stabilization point: ${stabilizationFacility.name} (${stabilizationFacility.distanceKm} km). Any ER can administer first-line treatment while arranging transfer.`,
+      });
+    }
+
+    emit("reasoning", {
+      step: "emergency",
+      text: "Call 108 (Indian emergency ambulance) immediately. Stabilize at nearest ER — they can provide ECG, oxygen, aspirin, and basic cardiac drugs while ambulance arranges transfer to specialist care.",
+    });
+  }
 
   type Scored = {
     id: number;
@@ -840,6 +933,7 @@ export async function streamAgent(
   let effectiveAnalysis = analysis;
   let verifiedBest: Scored | null = null;
   let verifiedVerdict: ValidatorVerdict | null = null;
+  let wasApproved = false;
   let lastAttemptResult: AttemptResult | null = null;
   let lastRejectedVerdicts: { cand: Scored; verdict: ValidatorVerdict }[] = [];
   let lastRejectedHints: string[] = [];
@@ -966,6 +1060,7 @@ export async function streamAgent(
     if (approvedThisAttempt) {
       verifiedBest = approvedThisAttempt.cand;
       verifiedVerdict = approvedThisAttempt.verdict;
+      wasApproved = true;
       break;
     }
 
@@ -1051,12 +1146,17 @@ export async function streamAgent(
     lat: final.lat as number,
     lon: final.lon as number,
     trustMin: final.trustMin ?? 0,
+    verified: wasApproved,
     reason:
       centerLat !== null
         ? `${Math.round(final.distance)} km from you with ${Math.round((final.trustMin ?? 0) * 100)}% trust. Suitable for ${effectiveAnalysis.condition}.${verifierReasonSuffix}`
         : `Highest trust facility for ${effectiveAnalysis.specialtyLabels[0]} in ${final.state}.${verifierReasonSuffix}`,
   };
   emit("recommendation", recommendation);
+
+  if (stabilizationFacility && stabilizationFacility.facilityId !== final.id) {
+    emit("stabilize", stabilizationFacility);
+  }
 
   const alternativeRows = candidates
     .filter((r) => r.id !== final.id)

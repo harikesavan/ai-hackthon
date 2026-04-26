@@ -65,10 +65,71 @@ function findCachedResponse(message: string): CachedResponse | null {
   return null;
 }
 
-type ChatHistoryEntry = { role: "user" | "assistant"; content: string };
+type SessionTurn = {
+  userMessage: string;
+  diagnosis: string | null;
+  location: string | null;
+  recommendation: Recommendation | null;
+};
+
+type Session = {
+  turns: SessionTurn[];
+  createdAt: number;
+};
+
+const sessions = new Map<string, Session>();
+const SESSION_TTL_MS = 30 * 60 * 1000;
+
+function getSession(sessionId: string): Session {
+  let session = sessions.get(sessionId);
+  if (!session) {
+    session = { turns: [], createdAt: Date.now() };
+    sessions.set(sessionId, session);
+  }
+  return session;
+}
+
+function pruneOldSessions() {
+  const now = Date.now();
+  for (const [id, session] of sessions) {
+    if (now - session.createdAt > SESSION_TTL_MS) sessions.delete(id);
+  }
+}
+
+function buildHistoryFromSession(session: Session): Array<{ role: "user" | "assistant"; content: string }> {
+  const entries: Array<{ role: "user" | "assistant"; content: string }> = [];
+  for (const turn of session.turns) {
+    entries.push({ role: "user", content: turn.userMessage });
+    const parts: string[] = [];
+    if (turn.diagnosis) parts.push(turn.diagnosis);
+    if (turn.location) parts.push(turn.location);
+    if (turn.recommendation) {
+      parts.push(
+        `Recommended: ${turn.recommendation.name} (${turn.recommendation.district ?? ""}, ${turn.recommendation.state ?? ""}) — trust ${Math.round(turn.recommendation.trustMin * 100)}%`,
+      );
+    }
+    if (parts.length > 0) {
+      entries.push({ role: "assistant", content: parts.join(" | ") });
+    }
+  }
+  return entries.slice(-12);
+}
+
+function buildContextPrefix(session: Session): string {
+  if (session.turns.length === 0) return "";
+  const last = session.turns[session.turns.length - 1];
+  const parts: string[] = [];
+  if (last.diagnosis) parts.push(last.diagnosis);
+  if (last.location) parts.push(last.location);
+  if (last.recommendation) {
+    parts.push(`Previous recommendation: ${last.recommendation.name} in ${last.recommendation.district ?? last.recommendation.state ?? "unknown"}`);
+  }
+  return parts.length > 0 ? `[Context from previous search: ${parts.join(". ")}] ` : "";
+}
 
 export async function POST(request: NextRequest) {
-  const { message, mode, demoMode, history } = await request.json();
+  const body = await request.json();
+  const { message, mode, demoMode, sessionId: rawSessionId } = body;
 
   if (!message) {
     return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -77,20 +138,28 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  pruneOldSessions();
+
+  const sessionId = typeof rawSessionId === "string" && rawSessionId ? rawSessionId : `anon-${Date.now()}`;
+  const session = getSession(sessionId);
+
   const resolvedMode: "demo" | "live" =
     mode === "live" || mode === "demo" ? mode : demoMode === false ? "live" : "demo";
 
-  const safeHistory: ChatHistoryEntry[] = Array.isArray(history)
-    ? history
-        .filter(
-          (item): item is ChatHistoryEntry =>
-            typeof item === "object" &&
-            item !== null &&
-            (item.role === "user" || item.role === "assistant") &&
-            typeof item.content === "string",
-        )
-        .slice(-10)
-    : [];
+  const contextPrefix = session.turns.length > 0 ? buildContextPrefix(session) : "";
+  const enrichedMessage = contextPrefix && !message.startsWith("[Context")
+    ? contextPrefix + message
+    : message;
+
+  const history = buildHistoryFromSession(session);
+
+  const currentTurn: SessionTurn = {
+    userMessage: message,
+    diagnosis: null,
+    location: null,
+    recommendation: null,
+  };
+  session.turns.push(currentTurn);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -99,7 +168,18 @@ export async function POST(request: NextRequest) {
         controller.enqueue(
           encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`),
         );
+
+        if (event === "reasoning") {
+          const step = payload as { step?: string; text?: string };
+          if (step.step === "diagnose" && step.text) currentTurn.diagnosis = step.text;
+          if (step.step === "locate" && step.text) currentTurn.location = step.text;
+        }
+        if (event === "recommendation") {
+          currentTurn.recommendation = payload as Recommendation;
+        }
       };
+
+      send("session", { sessionId });
 
       try {
         if (resolvedMode === "demo") {
@@ -140,7 +220,7 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        await streamAgent(message, safeHistory, send);
+        await streamAgent(enrichedMessage, history, send);
         controller.close();
       } catch (error) {
         send("reasoning", {

@@ -20,6 +20,7 @@ type Recommendation = {
   lon: number;
   trustMin: number;
   reason: string;
+  verified?: boolean;
 };
 
 type Warning = {
@@ -31,11 +32,24 @@ type Warning = {
   reason: string;
 };
 
+type StabilizationFacility = {
+  facilityId: number;
+  name: string;
+  type?: string;
+  district?: string;
+  state?: string;
+  lat: number;
+  lon: number;
+  trustMin: number;
+  distanceKm: number;
+};
+
 type Turn = {
   id: string;
   userMessage: string;
   reasoningSteps: ReasoningStep[];
   recommendation: Recommendation | null;
+  stabilization: StabilizationFacility | null;
   warnings: Warning[];
   followups: string[];
   isStreaming: boolean;
@@ -153,7 +167,8 @@ export default function ChatSidebar({
   const [query, setQuery] = useState("");
   const [isSubmittingQuery, setIsSubmittingQuery] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [mode, setMode] = useState<"demo" | "live">("demo");
+  const [mode, setMode] = useState<"demo" | "live">("live");
+  const [sessionId] = useState(() => `s-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const floatingQueryRef = useRef<HTMLTextAreaElement>(null);
   const panelQueryRef = useRef<HTMLTextAreaElement>(null);
@@ -209,21 +224,6 @@ export default function ChatSidebar({
     setHasInteracted(false);
   };
 
-  const buildFollowupContext = (turn: Turn): string => {
-    const diagStep = turn.reasoningSteps.find((s) => s.step === "diagnose");
-    const locStep = turn.reasoningSteps.find((s) => s.step === "locate");
-    const parts: string[] = [];
-
-    if (diagStep) parts.push(diagStep.text);
-    if (locStep) parts.push(locStep.text);
-    if (turn.recommendation) {
-      parts.push(
-        `Previous recommendation: ${turn.recommendation.name} in ${turn.recommendation.district ?? turn.recommendation.state ?? "unknown"}`,
-      );
-    }
-
-    return parts.length > 0 ? `[Context from previous search: ${parts.join(". ")}] ` : "";
-  };
 
   const handleSubmit = async (nextQuery?: string) => {
     const message = (nextQuery ?? query).trim();
@@ -237,6 +237,7 @@ export default function ChatSidebar({
       userMessage: message,
       reasoningSteps: [],
       recommendation: null,
+      stabilization: null,
       warnings: [],
       followups: [],
       isStreaming: true,
@@ -247,55 +248,13 @@ export default function ChatSidebar({
     setIsSubmittingQuery(true);
     setQuery("");
 
-    let history: Array<{ role: "user" | "assistant"; content: string }> = [];
-    setTurns((prev) => {
-      history = prev.flatMap((t) => {
-        const items: Array<{ role: "user" | "assistant"; content: string }> = [
-          { role: "user", content: t.userMessage },
-        ];
-        const diagnosisStep = t.reasoningSteps.find((s) => s.step === "diagnose");
-        const locationStep = t.reasoningSteps.find((s) => s.step === "locate");
-        const parts: string[] = [];
-
-        if (diagnosisStep) parts.push(diagnosisStep.text);
-        if (locationStep) parts.push(locationStep.text);
-        if (t.recommendation) {
-          parts.push(
-            `Recommended: ${t.recommendation.name} (${t.recommendation.district ?? ""}, ${t.recommendation.state ?? ""}) — trust ${Math.round(t.recommendation.trustMin * 100)}%`,
-          );
-        }
-
-        if (parts.length > 0) {
-          items.push({
-            role: "assistant",
-            content: parts.join(" | "),
-          });
-        }
-        return items;
-      });
-      return [...prev, newTurn];
-    });
-
-    // Prepend context from last turn to every follow-up so the agent never loses condition/location
-    let enrichedMessage = message;
-    setTurns((prev) => {
-      if (prev.length > 1) {
-        const lastCompletedTurn = [...prev].reverse().find((t) => !t.isStreaming && t.reasoningSteps.length > 0);
-        if (lastCompletedTurn) {
-          const ctx = buildFollowupContext(lastCompletedTurn);
-          if (ctx && !message.startsWith("[Context")) {
-            enrichedMessage = ctx + message;
-          }
-        }
-      }
-      return prev;
-    });
+    setTurns((prev) => [...prev, newTurn]);
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: enrichedMessage, mode, history }),
+        body: JSON.stringify({ message, mode, sessionId }),
       });
 
       if (!response.ok || !response.body) {
@@ -327,6 +286,9 @@ export default function ChatSidebar({
                   break;
                 case "recommendation":
                   updateTurn(turnId, { recommendation: data as Recommendation });
+                  break;
+                case "stabilize":
+                  updateTurn(turnId, { stabilization: data as StabilizationFacility });
                   break;
                 case "warnings":
                   updateTurn(turnId, { warnings: data as Warning[] });
@@ -478,51 +440,15 @@ export default function ChatSidebar({
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/12 text-cyan-400">
             <SparkleIcon className="h-5 w-5" />
           </div>
-           <div className="min-w-0 flex-1">
-             <p className="text-base font-semibold">AI Analysis</p>
-             <p className={`text-[11px] ${mutedTextClass}`}>Multi-turn guidance with streamed reasoning</p>
-           </div>
-          <div
-            role="group"
-            aria-label="Agent mode"
-            className={
-              "flex items-center rounded-full p-0.5 text-[10px] font-semibold uppercase tracking-wider " +
-              (isDarkMode ? "bg-slate-800/80 border border-white/10" : "bg-slate-100 border border-slate-200")
-            }
-          >
-            <button
-              type="button"
-              onClick={() => setMode("demo")}
-              className={
-                "rounded-full px-2.5 py-1 transition-colors cursor-pointer " +
-                (mode === "demo"
-                  ? isDarkMode
-                    ? "bg-cyan-500 text-slate-950"
-                    : "bg-cyan-500 text-white"
-                  : isDarkMode
-                    ? "text-slate-400 hover:text-slate-200"
-                    : "text-slate-500 hover:text-slate-800")
-              }
+           <div
+              className="min-w-0 flex-1 select-none"
+              onDoubleClick={() => setMode((m) => m === "live" ? "demo" : "live")}
             >
-              Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("live")}
-              className={
-                "rounded-full px-2.5 py-1 transition-colors cursor-pointer " +
-                (mode === "live"
-                  ? isDarkMode
-                    ? "bg-emerald-500 text-slate-950"
-                    : "bg-emerald-500 text-white"
-                  : isDarkMode
-                    ? "text-slate-400 hover:text-slate-200"
-                    : "text-slate-500 hover:text-slate-800")
-              }
-            >
-              Live
-            </button>
-          </div>
+              <p className="text-base font-semibold">AI Analysis</p>
+              <p className={`text-[11px] ${mutedTextClass}`}>
+                {mode === "demo" ? "Demo mode" : "Multi-turn guidance with streamed reasoning"}
+              </p>
+            </div>
           <div className="flex items-center gap-1">
             {turns.length > 0 && (
               <button
@@ -631,18 +557,61 @@ export default function ChatSidebar({
                 </div>
               )}
 
+              {turn.stabilization && (
+                <article
+                  className={
+                    "animate-message-in rounded-3xl border-2 p-4 shadow-lg " +
+                    (isDarkMode
+                      ? "border-red-500/40 bg-red-500/10"
+                      : "border-red-500 bg-red-50")
+                  }
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🚨</span>
+                    <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+                      Go Now — {turn.stabilization.distanceKm} km
+                    </p>
+                  </div>
+                  <p className="mt-2 text-sm font-bold">{turn.stabilization.name}</p>
+                  <p className="mt-1 text-xs opacity-80">
+                    {[turn.stabilization.type, turn.stabilization.district, turn.stabilization.state]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                  <p className={"mt-2 text-xs " + (isDarkMode ? "text-red-200" : "text-red-700")}>
+                    Any ER can stabilize with oxygen, ECG, aspirin. Call 108 for ambulance transfer.
+                  </p>
+                  {(onSelectFacility || onFlyToLocation) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectFacility?.(String(turn.stabilization?.facilityId));
+                        onFlyToLocation?.(turn.stabilization?.lat ?? 0, turn.stabilization?.lon ?? 0);
+                      }}
+                      className="mt-3 cursor-pointer whitespace-nowrap rounded-xl bg-red-500 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/70"
+                    >
+                      View on map
+                    </button>
+                  )}
+                </article>
+              )}
+
               {turn.recommendation && (
                 <article
                   className={
                     "animate-message-in rounded-3xl border p-4 shadow-lg " +
-                    (isDarkMode
-                      ? "border-emerald-500/30 bg-emerald-500/10"
-                      : "border-emerald-200 bg-emerald-50/90")
+                    (turn.recommendation.verified === false
+                      ? isDarkMode
+                        ? "border-amber-500/30 bg-amber-500/10"
+                        : "border-amber-300 bg-amber-50/90"
+                      : isDarkMode
+                        ? "border-emerald-500/30 bg-emerald-500/10"
+                        : "border-emerald-200 bg-emerald-50/90")
                   }
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">
-                      Recommendation
+                    <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${turn.recommendation.verified === false ? "text-amber-500" : "text-emerald-500"}`}>
+                      {turn.stabilization ? "Transfer To" : "Recommendation"}
                     </p>
                     {turn.isStreaming && (
                       <span className={`text-[11px] ${mutedTextClass}`}>Streaming...</span>
@@ -654,14 +623,20 @@ export default function ChatSidebar({
                       .filter(Boolean)
                       .join(" • ")}
                   </p>
-                  <p
-                    className={
-                      "mt-1 text-xs font-medium " +
-                      (turn.recommendation.trustMin >= 0.75 ? "text-emerald-500" : "text-amber-500")
-                    }
-                  >
-                    Confidence: {Math.round(turn.recommendation.trustMin * 100)}%
-                  </p>
+                  {turn.recommendation.verified === false ? (
+                    <p className="mt-1 text-xs font-medium text-red-400">
+                      ⚠ Unverified — best available, not confirmed for this condition
+                    </p>
+                  ) : (
+                    <p
+                      className={
+                        "mt-1 text-xs font-medium " +
+                        (turn.recommendation.trustMin >= 0.75 ? "text-emerald-500" : "text-amber-500")
+                      }
+                    >
+                      Confidence: {Math.round(turn.recommendation.trustMin * 100)}%
+                    </p>
+                  )}
                   <p className="mt-2 text-xs opacity-80">{turn.recommendation.reason}</p>
                   {(onSelectFacility || onFlyToLocation) && (
                     <button
@@ -716,7 +691,7 @@ export default function ChatSidebar({
                       <button
                         key={`${turn.id}-${followup}`}
                         type="button"
-                        onClick={() => void handleSubmit(buildFollowupContext(turn) + followup)}
+                        onClick={() => void handleSubmit(followup)}
                         className={
                           "rounded-full px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
                           (isDarkMode

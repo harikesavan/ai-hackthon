@@ -32,7 +32,7 @@ Reason step by step before producing JSON. The reasoning is internal — only th
 
 These are defaults, not absolutes. Override based on the specific condition.
 
-- Life-threatening emergency (cardiac arrest, stroke, major trauma): 100 km. Time-to-care matters more than facility quality at this range.
+- Life-threatening emergency (cardiac arrest, stroke, major trauma): Set maxReasonableDistanceKm to 100 km for definitive specialist care. The search engine will ALSO automatically find the nearest stabilization facility within 15 km. Your 100 km cap is for the specialist; the stabilization search is handled separately.
 - Common pediatric illness (chickenpox, fever, cold, cough): 20 km. Children should not travel far for self-limiting conditions; nearby community care is the right call.
 - Routine adult consultation (general checkup, BP, diabetes management): 40 km.
 - Chronic condition follow-up (oncology surveillance, renal management): 60 km.

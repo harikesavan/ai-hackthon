@@ -10,7 +10,30 @@ export type ReviewStatus =
   | "pending"
   | "confirmed_real"
   | "confirmed_ghost"
-  | "needs_visit";
+  | "needs_visit"
+  | "insufficient_data";
+
+export type EvidenceSupportStatus =
+  | "verified"
+  | "unsupported"
+  | "contradicted"
+  | "insufficient";
+
+export type EvidenceSpan = {
+  claim: string;
+  claimField: "services" | "specialties" | "equipment" | "staff" | "facilityType";
+  supportStatus: EvidenceSupportStatus;
+  sourceSentence: string | null;
+  extractionRationale: string;
+  iphsRuleId?: string;
+};
+
+export type TrustBreakdown = {
+  sourceSupport: { score: number; max: number; reason: string };
+  iphsConflict: { score: number; max: number; reason: string };
+  peerAnomaly: { score: number; max: number; reason: string };
+  total: number;
+};
 
 export type LocationFilter = {
   country: string;

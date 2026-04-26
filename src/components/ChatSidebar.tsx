@@ -78,11 +78,37 @@ export default function ChatSidebar({
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([]);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+  const [finalErrorMessage, setFinalErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const floatingQueryRef = useRef<HTMLTextAreaElement>(null);
+  const panelQueryRef = useRef<HTMLTextAreaElement>(null);
+
+  const resizeTextarea = (textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) {
+      return;
+    }
+
+    textarea.style.height = "0px";
+    const computedStyle = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
+    const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0;
+    const maxHeight = lineHeight * 5 + paddingTop + paddingBottom;
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [reasoningSteps.length, recommendation]);
+
+  useEffect(() => {
+    resizeTextarea(floatingQueryRef.current);
+    resizeTextarea(panelQueryRef.current);
+  }, [query, isOpen]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -103,7 +129,10 @@ export default function ChatSidebar({
     setReasoningSteps([]);
     setRecommendation(null);
     setWarnings([]);
+    setIsDetailsExpanded(false);
+    setFinalErrorMessage(null);
     setIsSubmittingQuery(true);
+    setQuery("");
 
     try {
       const response = await fetch("/api/chat", {
@@ -154,13 +183,16 @@ export default function ChatSidebar({
         }
       }
     } catch {
+      const errorMessage =
+        "Something went wrong while streaming the analysis. Please try again.";
       setReasoningSteps((prev) => [
         ...prev,
         {
           step: "warning",
-          text: "Something went wrong while streaming the analysis. Please try again.",
+          text: errorMessage,
         },
       ]);
+      setFinalErrorMessage(errorMessage);
     } finally {
       setIsSubmittingQuery(false);
     }
@@ -200,10 +232,11 @@ export default function ChatSidebar({
               ))}
             </div>
           )}
-          <div className="flex w-full max-w-xl items-center gap-2">
+          <div className="flex items-end gap-2">
             <div
+              style={{ width: "min(38rem, calc(100vw - 14rem))" }}
               className={
-                "flex flex-1 items-center gap-2 rounded-2xl px-4 py-3 shadow-xl transition-shadow focus-within:ring-2 focus-within:ring-cyan-500/40 " +
+                "flex items-center gap-2 rounded-2xl px-4 py-3 shadow-xl transition-shadow focus-within:ring-2 focus-within:ring-cyan-500/40 " +
                 (isDarkMode
                   ? "border border-white/10 bg-slate-900/90 text-white"
                   : "border border-slate-200 bg-white/90 text-slate-900")
@@ -213,15 +246,23 @@ export default function ChatSidebar({
                 <circle cx="9" cy="9" r="6" />
                 <path d="M14 14l4 4" />
               </svg>
-              <input
+              <textarea
+                ref={floatingQueryRef}
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                rows={1}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  resizeTextarea(event.currentTarget);
+                }}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") void handleSubmit();
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void handleSubmit();
+                  }
                 }}
                 placeholder="Ask about healthcare facilities..."
                 className={
-                  "w-full bg-transparent text-sm outline-none " +
+                  "w-full resize-none bg-transparent text-sm leading-5 outline-none " +
                   (isDarkMode ? "placeholder:text-slate-500" : "placeholder:text-slate-400")
                 }
               />
@@ -230,7 +271,7 @@ export default function ChatSidebar({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={isSubmittingQuery || !query.trim()}
-              className="shrink-0 cursor-pointer whitespace-nowrap rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-xl transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-12 shrink-0 cursor-pointer whitespace-nowrap rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-xl transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Ask AI
             </button>
@@ -240,7 +281,7 @@ export default function ChatSidebar({
                 aria-label="Reopen chat"
                 onClick={() => setIsOpen(true)}
                 className={
-                  "shrink-0 cursor-pointer rounded-2xl p-3 shadow-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
+                  "h-12 w-12 shrink-0 cursor-pointer rounded-2xl p-3 shadow-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
                   (isDarkMode
                     ? "border border-white/10 bg-slate-900/90 text-cyan-400 hover:bg-slate-800"
                     : "border border-slate-200 bg-white/90 text-cyan-600 hover:bg-white")
@@ -278,7 +319,7 @@ export default function ChatSidebar({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold">AI Analysis</p>
-            <p className={`text-[11px] ${mutedTextClass}`}>Streamed reasoning with inline facility guidance</p>
+            <p className={`text-[11px] ${mutedTextClass}`}>One answer card with optional reasoning details</p>
           </div>
           <button
             type="button"
@@ -338,103 +379,150 @@ export default function ChatSidebar({
             </div>
           )}
 
-          {reasoningSteps.map((step, index) => {
-            const isWarning = step.step === "warning";
-            const isRecommend = step.step === "recommend";
-            const bubbleClass = isWarning
-              ? isDarkMode
-                ? "border border-red-500/20 bg-red-500/10"
-                : "border border-red-200 bg-red-50"
-              : isRecommend
-                ? isDarkMode
-                  ? "border border-emerald-500/20 bg-emerald-500/10"
-                  : "border border-emerald-200 bg-emerald-50"
-                : isDarkMode
-                  ? "bg-slate-800/50"
-                  : "bg-slate-50";
-            const dotClass = isWarning
-              ? "bg-red-400"
-              : isRecommend
-                ? "bg-emerald-400"
-                : "bg-cyan-400";
-
-            return (
-              <article
-                key={`${step.step}-${index}-${step.text}`}
-                className={`animate-message-in rounded-xl px-3.5 py-2.5 text-xs leading-relaxed ${bubbleClass}`}
-              >
-                <div className="mb-1 flex items-center gap-1.5">
-                  <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
-                  <span className="text-[10px] font-medium uppercase tracking-wider opacity-60">
-                    {step.step}
-                  </span>
-                </div>
-                <p>{step.text}</p>
-              </article>
-            );
-          })}
-
-          {recommendation && (
+          {(recommendation || reasoningSteps.length > 0 || warnings.length > 0) && (
             <article
               className={
-                "animate-message-in rounded-xl border-2 p-4 " +
+                "animate-message-in rounded-2xl p-4 " +
                 (isDarkMode
-                  ? "border-emerald-500/30 bg-emerald-500/10"
-                  : "border-emerald-500 bg-emerald-50")
+                  ? "bg-slate-800/40"
+                  : "bg-slate-100/70")
               }
             >
-              <p className="text-sm font-bold">{recommendation.name}</p>
-              <p className="mt-1 text-xs opacity-80">
-                {[recommendation.type, recommendation.district, recommendation.state]
-                  .filter(Boolean)
-                  .join(" • ")}
-              </p>
-              <p
-                className={
-                  "mt-1 text-xs font-medium " +
-                  (recommendation.trustMin >= 0.75
-                    ? "text-emerald-500"
-                    : "text-amber-500")
-                }
-              >
-                Confidence: {Math.round(recommendation.trustMin * 100)}%
-              </p>
-              <p className="mt-2 text-xs opacity-70">{recommendation.reason}</p>
-              {(onSelectFacility || onFlyToLocation) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectFacility?.(String(recommendation.facilityId));
-                    onFlyToLocation?.(recommendation.lat, recommendation.lon);
-                  }}
-                  className="mt-3 cursor-pointer whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
-                >
-                  View on map
-                </button>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-cyan-500">
+                  Final answer
+                </p>
+                {isSubmittingQuery && (
+                  <span className={`text-[11px] ${mutedTextClass}`}>Updating...</span>
+                )}
+              </div>
+
+              {recommendation ? (
+                <>
+                  <p className="mt-2 text-sm font-bold">{recommendation.name}</p>
+                  <p className="mt-1 text-xs opacity-80">
+                    {[recommendation.type, recommendation.district, recommendation.state]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                  <p
+                    className={
+                      "mt-1 text-xs font-medium " +
+                      (recommendation.trustMin >= 0.75
+                        ? "text-emerald-500"
+                        : "text-amber-500")
+                    }
+                  >
+                    Confidence: {Math.round(recommendation.trustMin * 100)}%
+                  </p>
+                  <p className="mt-2 text-xs opacity-75">{recommendation.reason}</p>
+                  {(onSelectFacility || onFlyToLocation) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectFacility?.(String(recommendation.facilityId));
+                        onFlyToLocation?.(recommendation.lat, recommendation.lon);
+                      }}
+                      className="mt-3 cursor-pointer whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+                    >
+                      View on map
+                    </button>
+                  )}
+                </>
+              ) : finalErrorMessage ? (
+                <p className="mt-2 text-xs text-red-500">{finalErrorMessage}</p>
+              ) : (
+                <p className={`mt-2 text-xs ${mutedTextClass}`}>
+                  {isSubmittingQuery
+                    ? "The model is still reasoning. Expand details to see interim steps."
+                    : "No recommendation available for this query."}
+                </p>
+              )}
+
+              {(reasoningSteps.length > 0 || warnings.length > 0) && (
+                <section className="mt-3">
+                  <button
+                    type="button"
+                    aria-label={isDetailsExpanded ? "Hide reasoning and steps" : "Show reasoning and steps"}
+                    onClick={() => setIsDetailsExpanded((prev) => !prev)}
+                    className={
+                      "inline-flex cursor-pointer items-center gap-2 text-xs font-medium transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
+                      (isDarkMode
+                        ? "text-slate-300 hover:opacity-80"
+                        : "text-slate-600 hover:opacity-80")
+                    }
+                  >
+                    <span className="text-[10px]">
+                      {isDetailsExpanded ? "▼" : "▶"}
+                    </span>
+                    <span>
+                      {isDetailsExpanded ? "Hide" : "Show"} reasoning and steps
+                      {reasoningSteps.length > 0 ? ` (${reasoningSteps.length})` : ""}
+                    </span>
+                  </button>
+
+                  {isDetailsExpanded && (
+                    <div
+                      className={
+                        "mt-2 space-y-2 border-l pl-3 " +
+                        (isDarkMode ? "border-white/10" : "border-slate-300/70")
+                      }
+                    >
+                      {reasoningSteps.map((step, index) => {
+                        const isWarning = step.step === "warning";
+                        const isRecommend = step.step === "recommend";
+                        const dotClass = isWarning
+                          ? "bg-red-400"
+                          : isRecommend
+                            ? "bg-emerald-400"
+                            : "bg-cyan-400";
+                        const textClass = isWarning
+                          ? isDarkMode
+                            ? "text-red-200"
+                            : "text-red-700"
+                          : isDarkMode
+                            ? "text-slate-200"
+                            : "text-slate-700";
+
+                        return (
+                          <article
+                            key={`${step.step}-${index}-${step.text}`}
+                            className="flex gap-2 py-0.5 text-xs leading-relaxed"
+                          >
+                            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
+                            <div>
+                              <p className="text-[10px] font-medium uppercase tracking-wider opacity-60">
+                                {step.step}
+                              </p>
+                              <p className={textClass}>{step.text}</p>
+                            </div>
+                          </article>
+                        );
+                      })}
+
+                      {warnings.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          {warnings.map((warning, index) => (
+                            <article
+                              key={`${warning.facilityId}-${index}`}
+                              className="text-xs leading-relaxed"
+                            >
+                              <p className="font-semibold text-red-500">{warning.name}</p>
+                              <p className="text-red-500/90">
+                                Confidence: {Math.round(warning.trustMin * 100)}%
+                              </p>
+                              <p className={isDarkMode ? "text-red-200/90" : "text-red-700"}>
+                                {warning.reason}
+                              </p>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
               )}
             </article>
-          )}
-
-          {warnings.length > 0 && (
-            <section className="space-y-2">
-              {warnings.map((warning, index) => (
-                <article
-                  key={`${warning.facilityId}-${index}`}
-                  className={
-                    "animate-message-in rounded-xl px-3.5 py-2.5 text-xs " +
-                    (isDarkMode
-                      ? "border border-red-500/20 bg-red-500/5"
-                      : "border border-red-200 bg-red-50/50")
-                  }
-                >
-                  <p className="font-bold">{warning.name}</p>
-                  <p className="mt-1 text-red-500">
-                    Confidence: {Math.round(warning.trustMin * 100)}%
-                  </p>
-                  <p className="mt-1 opacity-75">{warning.reason}</p>
-                </article>
-              ))}
-            </section>
           )}
 
           <div ref={messagesEndRef} />
@@ -449,18 +537,24 @@ export default function ChatSidebar({
             <label htmlFor="chat-sidebar-query" className="sr-only">
               Ask about healthcare facilities
             </label>
-            <input
+            <textarea
+              ref={panelQueryRef}
               id="chat-sidebar-query"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              rows={1}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                resizeTextarea(event.currentTarget);
+              }}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
                   void handleSubmit();
                 }
               }}
               placeholder="Ask about healthcare facilities..."
               className={
-                "flex-1 rounded-xl px-4 py-2.5 text-sm outline-none transition-shadow focus:ring-2 focus:ring-cyan-500/40 " +
+                "flex-1 resize-none rounded-xl px-4 py-2.5 text-sm leading-5 outline-none transition-shadow focus:ring-2 focus:ring-cyan-500/40 " +
                 (isDarkMode
                   ? "border border-white/10 bg-slate-800/80 text-white placeholder:text-slate-500"
                   : "border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400")

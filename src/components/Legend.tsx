@@ -19,8 +19,8 @@ export const Legend = ({ isDarkMode, view }: LegendProps) => {
       <section
         className={
           isDarkMode
-            ? "absolute right-4 top-20 z-[1000] w-64 rounded-xl border border-white/10 bg-slate-900/70 p-3 shadow-lg backdrop-blur-xl"
-            : "absolute right-4 top-20 z-[1000] w-64 rounded-xl border border-slate-200/50 bg-white/70 p-3 shadow-lg backdrop-blur-xl"
+            ? "absolute right-4 top-24 z-[900] w-64 rounded-xl border border-white/10 bg-slate-900/70 p-3 shadow-lg backdrop-blur-xl"
+            : "absolute right-4 top-24 z-[900] w-64 rounded-xl border border-slate-200/50 bg-white/70 p-3 shadow-lg backdrop-blur-xl"
         }
       >
         <p
@@ -40,8 +40,8 @@ export const Legend = ({ isDarkMode, view }: LegendProps) => {
               : "mt-1 flex items-center justify-between text-[11px] text-slate-600"
           }
         >
-          <span className="whitespace-nowrap">Hospitals nearby</span>
-          <span className="whitespace-nowrap">Hospitals far away</span>
+          <span className="whitespace-nowrap">Nearby</span>
+          <span className="whitespace-nowrap">Far away</span>
         </div>
       </section>
     );
@@ -51,8 +51,8 @@ export const Legend = ({ isDarkMode, view }: LegendProps) => {
     <section
       className={
         isDarkMode
-          ? "absolute right-4 top-20 z-[1000] rounded-xl border border-white/10 bg-slate-900/70 backdrop-blur-xl p-3 shadow-lg"
-          : "absolute right-4 top-20 z-[1000] rounded-xl border border-slate-200/50 bg-white/70 backdrop-blur-xl p-3 shadow-lg"
+          ? "absolute right-4 top-24 z-[900] rounded-xl border border-white/10 bg-slate-900/70 backdrop-blur-xl p-3 shadow-lg"
+          : "absolute right-4 top-24 z-[900] rounded-xl border border-slate-200/50 bg-white/70 backdrop-blur-xl p-3 shadow-lg"
       }
     >
       <p

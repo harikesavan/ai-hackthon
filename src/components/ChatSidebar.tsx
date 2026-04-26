@@ -185,7 +185,7 @@ export default function ChatSidebar({
                   type="button"
                   style={{ animationDelay: `${index * 100}ms` }}
                   className={
-                    "animate-fade-in-up whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium shadow-lg transition-all duration-200 hover:scale-[1.03] " +
+                    "animate-fade-in-up cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium shadow-lg transition-all duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
                     (isDarkMode
                       ? "border border-cyan-500/25 bg-slate-900/80 text-cyan-300 hover:bg-slate-800/90"
                       : "border border-cyan-200 bg-white/80 text-cyan-700 hover:bg-white/95")
@@ -230,7 +230,7 @@ export default function ChatSidebar({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={isSubmittingQuery || !query.trim()}
-              className="shrink-0 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-xl transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 cursor-pointer whitespace-nowrap rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-xl transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Ask AI
             </button>
@@ -240,7 +240,7 @@ export default function ChatSidebar({
                 aria-label="Reopen chat"
                 onClick={() => setIsOpen(true)}
                 className={
-                  "shrink-0 rounded-2xl p-3 shadow-xl transition-colors " +
+                  "shrink-0 cursor-pointer rounded-2xl p-3 shadow-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
                   (isDarkMode
                     ? "border border-white/10 bg-slate-900/90 text-cyan-400 hover:bg-slate-800"
                     : "border border-slate-200 bg-white/90 text-cyan-600 hover:bg-white")
@@ -285,7 +285,7 @@ export default function ChatSidebar({
             aria-label="Close AI analysis"
             onClick={() => setIsOpen(false)}
             className={
-              "flex h-8 w-8 items-center justify-center rounded-lg transition-colors " +
+              "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
               (isDarkMode ? "hover:bg-white/8" : "hover:bg-slate-900/6")
             }
           >
@@ -304,7 +304,7 @@ export default function ChatSidebar({
                     type="button"
                     style={{ animationDelay: `${index * 90}ms` }}
                     className={
-                      "animate-fade-in-up rounded-full px-3 py-2 text-left text-xs transition-colors " +
+                      "animate-fade-in-up cursor-pointer whitespace-nowrap rounded-full px-3 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 " +
                       (isDarkMode
                         ? "border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
                         : "border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100")
@@ -407,7 +407,7 @@ export default function ChatSidebar({
                     onSelectFacility?.(String(recommendation.facilityId));
                     onFlyToLocation?.(recommendation.lat, recommendation.lon);
                   }}
-                  className="mt-3 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400"
+                  className="mt-3 cursor-pointer whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
                 >
                   View on map
                 </button>
@@ -470,7 +470,7 @@ export default function ChatSidebar({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={isSubmittingQuery || !query.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span>Ask AI</span>
               <SendIcon className="h-4 w-4" />

@@ -45,6 +45,7 @@ export const FacilityLayer = ({
                  radius={radius + 8}
                  pathOptions={{
                    color: "#22d3ee",
+                  className: "pointer-events-none",
                    weight: 2,
                    fillColor: "transparent",
                    fillOpacity: 0,
@@ -58,6 +59,7 @@ export const FacilityLayer = ({
                center={[facility.lat, facility.lng]}
                radius={radius}
                pathOptions={{
+                  className: "cursor-pointer",
                  color: selectedFacilityId === facility.id ? "#67e8f9" : "#ffffff",
                  weight: selectedFacilityId === facility.id ? 2.5 : 1,
                  fillColor: getFillColor(facility.trust),

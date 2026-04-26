@@ -74,6 +74,11 @@ export const FacilityDetailPanel = ({
   const panelClasses = isDarkMode
     ? "absolute left-4 top-20 z-[1000] w-[360px] rounded-2xl border border-white/10 bg-slate-900/80 p-5 text-sm text-slate-200 shadow-2xl backdrop-blur-xl"
     : "absolute left-4 top-20 z-[1000] w-[360px] rounded-2xl border border-slate-200/50 bg-white/80 p-5 text-sm text-slate-700 shadow-2xl backdrop-blur-xl";
+  const closeButtonClassName = isDarkMode
+    ? "flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
+    : "flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40";
+  const actionButtonBaseClassName =
+    "flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium leading-none whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 disabled:cursor-not-allowed";
 
   return (
     <section className={panelClasses}>
@@ -87,11 +92,7 @@ export const FacilityDetailPanel = ({
         </h2>
         <button
           aria-label="Close facility details"
-          className={
-            isDarkMode
-              ? "flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700"
-              : "flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-200"
-          }
+          className={closeButtonClassName}
           onClick={onClose}
           type="button"
         >
@@ -159,8 +160,8 @@ export const FacilityDetailPanel = ({
             type="button"
             className={
               reviewStatus === "confirmed_ghost"
-                ? "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-500 px-3 py-2 text-xs font-medium text-white"
-                : "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-red-400"
+                ? `${actionButtonBaseClassName} bg-slate-500 text-white`
+                : `${actionButtonBaseClassName} bg-red-500 text-white hover:bg-red-400`
              }
              disabled={isSubmittingReview || reviewStatus === "confirmed_ghost"}
              onClick={() => handleReviewSubmit("confirmed_ghost")}
@@ -180,8 +181,8 @@ export const FacilityDetailPanel = ({
             type="button"
             className={
               reviewStatus === "confirmed_real"
-                ? "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-500 px-3 py-2 text-xs font-medium text-white"
-                : "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-green-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-green-500"
+                ? `${actionButtonBaseClassName} bg-slate-500 text-white`
+                : `${actionButtonBaseClassName} bg-green-600 text-white hover:bg-green-500`
              }
              disabled={isSubmittingReview || reviewStatus === "confirmed_real"}
              onClick={() => handleReviewSubmit("confirmed_real")}
@@ -201,8 +202,8 @@ export const FacilityDetailPanel = ({
             type="button"
             className={
               reviewStatus === "needs_visit"
-                ? "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-500 px-3 py-2 text-xs font-medium text-white"
-                : "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-3 py-2 text-xs font-medium text-slate-950 transition-colors hover:bg-amber-400"
+                ? `${actionButtonBaseClassName} bg-slate-500 text-white`
+                : `${actionButtonBaseClassName} bg-amber-500 text-slate-950 hover:bg-amber-400`
              }
              disabled={isSubmittingReview || reviewStatus === "needs_visit"}
              onClick={() => handleReviewSubmit("needs_visit")}
@@ -216,7 +217,7 @@ export const FacilityDetailPanel = ({
                />
                <circle cx="6" cy="6" r="1.4" fill="currentColor" />
              </svg>
-             Needs Site Visit
+            Needs Visit
           </button>
         </div>
         {reviewMessage ? (

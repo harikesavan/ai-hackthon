@@ -5,13 +5,14 @@ import ChatSidebar from "@/components/ChatSidebar";
 import { FacilityDetailPanel } from "@/components/FacilityDetailPanel";
 import { Legend } from "@/components/Legend";
 import { TopBar } from "@/components/TopBar";
-import { capabilities, defaultMapState } from "@/data/facilities";
+import { capabilities, defaultMapState, testFacilities } from "@/data/facilities";
 import { filterFacilities } from "@/lib/map-utils";
 import type {
   CapabilityStatus,
   Facility,
   FacilityCard,
   MapState,
+  MapViewMode,
 } from "@/types/healthcare";
 import dynamic from "next/dynamic";
 
@@ -136,6 +137,7 @@ const normalizeFacilityCard = (item: unknown): FacilityCard | null => {
 
 export default function Home() {
   const [mapState, setMapState] = useState<MapState>(defaultMapState);
+  const [view, setView] = useState<MapViewMode>("hospitals");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [flyToCoords, setFlyToCoords] = useState<[number, number] | null>(null);
@@ -178,7 +180,12 @@ export default function Home() {
       try {
         const response = await fetch("/api/map-data");
         if (!response.ok) {
-          throw new Error("Failed to load map data");
+          const details = await response.text();
+          throw new Error(
+            details
+              ? `Failed to load map data: ${response.status} ${details}`
+              : `Failed to load map data: ${response.status}`,
+          );
         }
 
         const payload = (await response.json()) as { features?: MapFeature[] };
@@ -225,6 +232,7 @@ export default function Home() {
         setFacilities(nextFacilities);
       } catch (error) {
         console.error(error);
+        setFacilities(testFacilities);
       }
     };
 
@@ -269,6 +277,7 @@ export default function Home() {
   }, [mapState.location.district, mapState.location.state]);
 
   const handleCapabilityChange = (capability: MapState["capability"]) => {
+    setFlyToCoords(null);
     setSelectedFacilityId(null);
     setMapState((previous) => ({ ...previous, capability }));
   };
@@ -277,6 +286,7 @@ export default function Home() {
     key: keyof MapState["location"],
     value: string,
   ) => {
+    setFlyToCoords(null);
     setSelectedFacilityId(null);
     setMapState((previous) => {
       if (key === "country" && typeof value === "string") {
@@ -311,6 +321,7 @@ export default function Home() {
   };
 
   const handleTrustChange = (trust: number) => {
+    setFlyToCoords(null);
     setSelectedFacilityId(null);
     setMapState((previous) => ({ ...previous, trustMin: trust }));
   };
@@ -319,6 +330,7 @@ export default function Home() {
     key: keyof MapState["availability"],
     value: boolean,
   ) => {
+    setFlyToCoords(null);
     setSelectedFacilityId(null);
     setMapState((previous) => ({
       ...previous,
@@ -330,12 +342,18 @@ export default function Home() {
   };
 
   const handleResetFilters = () => {
+    setFlyToCoords(null);
     setSelectedFacilityId(null);
     setMapState({
       ...defaultMapState,
       location: { ...defaultMapState.location },
       availability: { ...defaultMapState.availability },
     });
+  };
+
+  const handleSelectFacility = (facilityId: string) => {
+    setFlyToCoords(null);
+    setSelectedFacilityId(facilityId);
   };
 
   return (
@@ -348,10 +366,12 @@ export default function Home() {
     >
       <TopBar
         state={mapState}
+        view={view}
         isDarkMode={isDarkMode}
         states={states}
         districts={districts}
         facilityCount={filteredFacilities.length}
+        onViewChange={setView}
         onCapabilityChange={handleCapabilityChange}
         onLocationChange={handleLocationChange}
         onTrustChange={handleTrustChange}
@@ -362,28 +382,32 @@ export default function Home() {
       <MapView
         facilities={filteredFacilities}
         allFacilities={facilities}
+        view={view}
         location={mapState.location}
         capability={mapState.capability}
         isDarkMode={isDarkMode}
         selectedFacilityId={selectedFacilityId}
         flyToCoords={flyToCoords}
-        onSelectFacility={setSelectedFacilityId}
+        onSelectFacility={handleSelectFacility}
         onResetSelection={() => {
           setSelectedFacilityId(null);
           setFlyToCoords(null);
         }}
       />
-      <Legend isDarkMode={isDarkMode} />
+      <Legend isDarkMode={isDarkMode} view={view} />
       <FacilityDetailPanel
         key={selectedFacility?.id ?? "no-selection"}
         facility={selectedFacility}
         capability={mapState.capability}
         isDarkMode={isDarkMode}
-        onClose={() => setSelectedFacilityId(null)}
+        onClose={() => {
+          setSelectedFacilityId(null);
+          setFlyToCoords(null);
+        }}
       />
       <ChatSidebar
         isDarkMode={isDarkMode}
-        onSelectFacility={setSelectedFacilityId}
+        onSelectFacility={handleSelectFacility}
         onFlyToLocation={(lat, lng) => setFlyToCoords([lat, lng])}
       />
     </main>

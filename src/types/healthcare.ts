@@ -22,6 +22,8 @@ export type AvailabilityFilters = {
   open247: boolean;
 };
 
+export type MapViewMode = "hospitals" | "deserts";
+
 export type MapState = {
   capability: Capability;
   location: LocationFilter;

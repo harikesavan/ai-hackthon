@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { capabilities, defaultMapState } from "@/data/facilities";
-import type { MapState } from "@/types/healthcare";
+import type { MapState, MapViewMode } from "@/types/healthcare";
 
 type TopBarProps = {
   state: MapState;
+  view: MapViewMode;
   isDarkMode: boolean;
   states: string[];
   districts: string[];
   facilityCount: number;
+  onViewChange: (view: MapViewMode) => void;
   onCapabilityChange: (capability: MapState["capability"]) => void;
   onLocationChange: (key: keyof MapState["location"], value: string) => void;
   onTrustChange: (trust: number) => void;
@@ -20,10 +21,12 @@ type TopBarProps = {
 
 export const TopBar = ({
   state,
+  view,
   isDarkMode,
   states,
   districts,
   facilityCount,
+  onViewChange,
   onCapabilityChange,
   onLocationChange,
   onTrustChange,
@@ -31,19 +34,13 @@ export const TopBar = ({
   onResetFilters,
   onThemeToggle,
 }: TopBarProps) => {
-  const [localTrust, setLocalTrust] = useState(state.trustMin);
-
-  useEffect(() => {
-    setLocalTrust(state.trustMin);
-  }, [state.trustMin]);
-
   const panelClassName = isDarkMode
     ? "rounded-2xl border border-white/10 bg-slate-900/85 px-4 py-2 shadow-lg backdrop-blur-md"
     : "rounded-2xl border border-slate-200/50 bg-white/85 px-4 py-2 shadow-lg backdrop-blur-md";
 
   const selectClassName = isDarkMode
-    ? "h-7 rounded-lg border border-white/10 bg-slate-800/60 px-2 text-xs text-slate-100 outline-none focus:ring-1 focus:ring-cyan-500/40"
-    : "h-7 rounded-lg border border-slate-200 bg-white/80 px-2 text-xs text-slate-800 outline-none focus:ring-1 focus:ring-cyan-500/40";
+    ? "h-7 cursor-pointer rounded-lg border border-white/10 bg-slate-800/60 px-2 text-xs text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+    : "h-7 cursor-pointer rounded-lg border border-slate-200 bg-white/80 px-2 text-xs text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40";
 
   const labelClassName = isDarkMode
     ? "flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-slate-400"
@@ -52,20 +49,20 @@ export const TopBar = ({
   const groupClassName = "flex min-w-[120px] flex-col gap-1";
 
   const checkboxClassName = isDarkMode
-    ? "flex h-7 items-center gap-2 rounded-lg border border-white/10 bg-slate-800/60 px-2 text-xs text-slate-100"
-    : "flex h-7 items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-2 text-xs text-slate-800";
+    ? "flex h-7 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-slate-800/60 px-2 text-xs text-slate-100"
+    : "flex h-7 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-2 text-xs text-slate-800";
 
   const badgeClassName = isDarkMode
     ? "rounded-full border border-cyan-500/20 bg-cyan-500/15 px-2.5 py-0.5 text-xs font-semibold text-cyan-300"
     : "rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-700";
 
   const resetButtonClassName = isDarkMode
-    ? "rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition-all duration-200 hover:bg-red-500/20"
-    : "rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-all duration-200 hover:bg-red-100";
+    ? "cursor-pointer whitespace-nowrap rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 transition-all duration-200 hover:bg-red-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
+    : "cursor-pointer whitespace-nowrap rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 transition-all duration-200 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50";
 
   const themeToggleClassName = isDarkMode
-    ? "flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition-colors duration-200 hover:bg-slate-700"
-    : "flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition-colors duration-200 hover:bg-slate-200";
+    ? "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-300 transition-colors duration-200 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
+    : "flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition-colors duration-200 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50";
 
   const showResetButton =
     state.location.state !== defaultMapState.location.state ||
@@ -99,6 +96,24 @@ export const TopBar = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <label className={groupClassName}>
+              <span className={labelClassName}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2 3h12M2 8h12M2 13h12" />
+                </svg>
+                View
+              </span>
+              <select
+                aria-label="Select map view"
+                className={selectClassName}
+                value={view}
+                onChange={(event) => onViewChange(event.target.value as MapViewMode)}
+              >
+                <option value="hospitals">Hospitals</option>
+                <option value="deserts">Deserts</option>
+              </select>
+            </label>
+
             <label className={groupClassName}>
               <span className={labelClassName}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -194,17 +209,16 @@ export const TopBar = ({
             </div>
 
             <label className="flex min-w-[140px] flex-col gap-1">
-              <span className={labelClassName}>Trust ≥ {localTrust}%</span>
+              <span className={labelClassName}>Trust ≥ {state.trustMin}%</span>
               <input
                 aria-label="Set trust threshold"
-                className="trust-slider h-7 w-full accent-cyan-500"
+                className="trust-slider h-7 w-full cursor-pointer accent-cyan-500"
                 type="range"
                 min={0}
                 max={100}
                 step={10}
-                value={localTrust}
-                onChange={(event) => setLocalTrust(Number(event.target.value))}
-                onPointerUp={() => onTrustChange(localTrust)}
+                value={state.trustMin}
+                onChange={(event) => onTrustChange(Number(event.target.value))}
               />
             </label>
 

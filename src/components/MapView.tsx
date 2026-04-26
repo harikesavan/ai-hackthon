@@ -14,7 +14,9 @@ type MapViewProps = {
   capability: Capability;
   isDarkMode: boolean;
   selectedFacilityId: string | null;
+  flyToCoords: [number, number] | null;
   onSelectFacility: (facilityId: string) => void;
+  onResetSelection: () => void;
 };
 
 const indiaBounds: LatLngBoundsExpression = [
@@ -65,6 +67,59 @@ const buildBoundsFromFacilities = (
     [minLat, minLng],
     [maxLat, maxLng],
   ];
+};
+
+const CustomZoomControl = ({
+  isDarkMode,
+  onResetSelection,
+}: {
+  isDarkMode: boolean;
+  onResetSelection: () => void;
+}) => {
+  const map = useMap();
+
+  const btnClass = isDarkMode
+    ? "w-9 h-9 rounded-xl border border-white/10 bg-slate-900/85 text-slate-300 hover:bg-slate-800 flex items-center justify-center transition-colors shadow-lg"
+    : "w-9 h-9 rounded-xl border border-slate-200/50 bg-white/85 text-slate-600 hover:bg-white flex items-center justify-center transition-colors shadow-lg";
+
+  return (
+    <div className="absolute bottom-28 left-4 z-[1000] flex flex-col gap-1.5">
+      <button
+        type="button"
+        onClick={() => map.zoomIn()}
+        aria-label="Zoom in"
+        className={btnClass}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M7 1v12M1 7h12" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => map.zoomOut()}
+        aria-label="Zoom out"
+        className={btnClass}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M1 7h12" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onResetSelection();
+          map.fitBounds(indiaBounds, { padding: [24, 24], animate: true, duration: 0.8 });
+        }}
+        aria-label="Reset view"
+        className={btnClass}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 1v5h5" />
+          <path d="M2 10a6 6 0 1 0 1.5-6.3L1 6" />
+        </svg>
+      </button>
+    </div>
+  );
 };
 
 const MapViewportController = ({
@@ -118,6 +173,31 @@ const MapViewportController = ({
   return null;
 };
 
+const FlyToSelected = ({
+  selectedFacilityId,
+  flyToCoords,
+  allFacilities,
+}: {
+  selectedFacilityId: string | null;
+  flyToCoords: [number, number] | null;
+  allFacilities: Facility[];
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (flyToCoords) {
+      map.flyTo(flyToCoords, 13, { duration: 1.2 });
+      return;
+    }
+    if (!selectedFacilityId) return;
+    const facility = allFacilities.find((f) => f.id === selectedFacilityId);
+    if (!facility || !Number.isFinite(facility.lat) || !Number.isFinite(facility.lng)) return;
+    map.flyTo([facility.lat, facility.lng], 13, { duration: 1.2 });
+  }, [selectedFacilityId, flyToCoords, allFacilities, map]);
+
+  return null;
+};
+
 export const MapView = ({
   facilities,
   allFacilities,
@@ -125,11 +205,13 @@ export const MapView = ({
   capability,
   isDarkMode,
   selectedFacilityId,
+  flyToCoords,
   onSelectFacility,
+  onResetSelection,
 }: MapViewProps) => {
   const tileUrl = isDarkMode
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
   return (
     <section className="relative h-full w-full overflow-hidden">
@@ -137,23 +219,25 @@ export const MapView = ({
         key={isDarkMode ? "dark-map" : "light-map"}
         bounds={indiaBounds}
         minZoom={4.5}
-        maxZoom={10}
+        maxZoom={16}
         maxBounds={indiaPaddedBounds}
         maxBoundsViscosity={0.7}
         zoomControl={false}
         className="h-full w-full"
       >
-        <TileLayer
-          url={tileUrl}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        />
-        <MapViewportController allFacilities={allFacilities} location={location} />
-        <FacilityLayer
-          facilities={facilities}
-          capability={capability}
-          selectedFacilityId={selectedFacilityId}
-          onSelectFacility={onSelectFacility}
-        />
+         <TileLayer
+           url={tileUrl}
+           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+         />
+         <MapViewportController allFacilities={allFacilities} location={location} />
+         <FlyToSelected selectedFacilityId={selectedFacilityId} flyToCoords={flyToCoords} allFacilities={allFacilities} />
+         <FacilityLayer
+           facilities={facilities}
+           capability={capability}
+           selectedFacilityId={selectedFacilityId}
+           onSelectFacility={onSelectFacility}
+         />
+         <CustomZoomControl isDarkMode={isDarkMode} onResetSelection={onResetSelection} />
       </MapContainer>
     </section>
   );

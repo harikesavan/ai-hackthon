@@ -15,7 +15,7 @@ export const defaultMapState: MapState = {
     state: "All",
     district: "All",
   },
-  trustMin: 60,
+  trustMin: 0,
   availability: {
     open247: false,
   },

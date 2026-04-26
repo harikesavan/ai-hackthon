@@ -1,14 +1,30 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { facilities } from "@/lib/db/schema";
 import { isNotNull } from "drizzle-orm";
 
+type CachedPayload = {
+  json: string;
+  builtAt: number;
+};
+
+let cached: CachedPayload | null = null;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 export async function GET() {
+  const now = Date.now();
+  if (cached && now - cached.builtAt < CACHE_TTL_MS) {
+    return new Response(cached.json, {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+      },
+    });
+  }
+
   const rows = await db
     .select({
       id: facilities.id,
       name: facilities.facilityName,
-      type: facilities.facilityType,
       state: facilities.state,
       district: facilities.district,
       lat: facilities.lat,
@@ -16,9 +32,6 @@ export async function GET() {
       beds: facilities.beds,
       services: facilities.services,
       emergencyAvailable: facilities.emergencyAvailable,
-      extractionConfidence: facilities.extractionConfidence,
-      ruleViolations: facilities.ruleViolations,
-      peerAnomalyPercentile: facilities.peerAnomalyPercentile,
       trustMin: facilities.trustMin,
       reviewStatus: facilities.reviewStatus,
     })
@@ -36,22 +49,24 @@ export async function GET() {
       properties: {
         id: row.id,
         name: row.name,
-        type: row.type,
         state: row.state,
         district: row.district,
         beds: row.beds,
         services: row.services,
         emergencyAvailable: row.emergencyAvailable,
-        extractionConfidence: row.extractionConfidence,
-        ruleViolationCount: Array.isArray(row.ruleViolations)
-          ? row.ruleViolations.length
-          : 0,
-        peerAnomalyPercentile: row.peerAnomalyPercentile,
         trustMin: row.trustMin,
         reviewStatus: row.reviewStatus,
       },
     })),
   };
 
-  return NextResponse.json(geojson);
+  const json = JSON.stringify(geojson);
+  cached = { json, builtAt: now };
+
+  return new Response(json, {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+    },
+  });
 }

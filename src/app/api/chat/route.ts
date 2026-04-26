@@ -84,7 +84,7 @@ async function getAgentResponse(message: string, demoMode: boolean): Promise<Age
     return {
       query: message,
       recommendation: null,
-      reasoning: [{ step: "error", text: "Could not process this query. Try a suggested question." }],
+      reasoning: [{ step: "error", text: "No matching data found for this query. Try one of the suggested questions like 'Hospital near Patna for C-section', 'Cardiac care in Rajasthan', or 'Surgery facility in Chennai'." }],
       warnings: [],
       mapState: null,
     };

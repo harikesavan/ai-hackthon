@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ChatSidebar from "@/components/ChatSidebar";
 import { FacilityDetailPanel } from "@/components/FacilityDetailPanel";
 import { Legend } from "@/components/Legend";
-import { SearchInput } from "@/components/SearchInput";
 import { TopBar } from "@/components/TopBar";
 import { capabilities, defaultMapState } from "@/data/facilities";
 import { filterFacilities } from "@/lib/map-utils";
@@ -40,39 +40,6 @@ type MapFeature = {
 type FacilitiesApiResponse = {
   count: number;
   facilities: unknown[];
-};
-
-type ReasoningStep = {
-  step: string;
-  text: string;
-};
-
-type Recommendation = {
-  facilityId: number;
-  name: string;
-  type?: string;
-  district?: string;
-  state?: string;
-  lat: number;
-  lon: number;
-  trustMin: number;
-  reason: string;
-};
-
-type Warning = {
-  facilityId: number;
-  name: string;
-  lat?: number;
-  lon?: number;
-  trustMin: number;
-  reason: string;
-};
-
-type HighlightEvent = {
-  type: "red" | "green";
-  facilityId: number;
-  lat: number;
-  lon: number;
 };
 
 const getCapabilityStatusFromTrust = (
@@ -171,15 +138,9 @@ export default function Home() {
   const [mapState, setMapState] = useState<MapState>(defaultMapState);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [flyToCoords, setFlyToCoords] = useState<[number, number] | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [chatAnswer, setChatAnswer] = useState("");
   const [facilityCards, setFacilityCards] = useState<FacilityCard[]>([]);
-  const [isSubmittingQuery, setIsSubmittingQuery] = useState(false);
-  const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([]);
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
-  const [warnings, setWarnings] = useState<Warning[]>([]);
-  const [highlights, setHighlights] = useState<HighlightEvent[]>([]);
 
   const states = useMemo(() => {
     const options = facilities.filter((facility) => {
@@ -368,86 +329,13 @@ export default function Home() {
     }));
   };
 
-  const handleApplyQuery = async () => {
-    if (!query.trim()) {
-      return;
-    }
-
-    setIsSubmittingQuery(true);
-    setReasoningSteps([]);
-    setRecommendation(null);
-    setWarnings([]);
-    setHighlights([]);
-    setChatAnswer("");
-    setFacilityCards([]);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: query.trim(), demoMode: true }),
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error("Failed to fetch chat response");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        let currentEvent = "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7).trim();
-          } else if (line.startsWith("data: ") && currentEvent) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              switch (currentEvent) {
-                case "reasoning":
-                  setReasoningSteps((prev) => [...prev, data as ReasoningStep]);
-                  break;
-                case "recommendation":
-                  setRecommendation(data as Recommendation);
-                  break;
-                case "warnings":
-                  setWarnings(data as Warning[]);
-                  break;
-                case "highlight":
-                  setHighlights((prev) => [...prev, data as HighlightEvent]);
-                  break;
-              }
-            } catch {
-              // skip malformed JSON
-            }
-            currentEvent = "";
-          }
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      setChatAnswer("Something went wrong. Try a suggested query.");
-    } finally {
-      setIsSubmittingQuery(false);
-    }
-  };
-
-  const suggestedQueries = [
-    "Hospital near Patna for emergency C-section",
-    "Cardiac care in Rajasthan",
-    "Surgery facility in Chennai",
-  ];
-
-  const handleCardSelect = (card: FacilityCard) => {
-    setSelectedFacilityId(String(card.id));
+  const handleResetFilters = () => {
+    setSelectedFacilityId(null);
+    setMapState({
+      ...defaultMapState,
+      location: { ...defaultMapState.location },
+      availability: { ...defaultMapState.availability },
+    });
   };
 
   return (
@@ -463,10 +351,12 @@ export default function Home() {
         isDarkMode={isDarkMode}
         states={states}
         districts={districts}
+        facilityCount={filteredFacilities.length}
         onCapabilityChange={handleCapabilityChange}
         onLocationChange={handleLocationChange}
         onTrustChange={handleTrustChange}
         onAvailabilityChange={handleAvailabilityChange}
+        onResetFilters={handleResetFilters}
         onThemeToggle={() => setIsDarkMode((previous) => !previous)}
       />
       <MapView
@@ -476,7 +366,12 @@ export default function Home() {
         capability={mapState.capability}
         isDarkMode={isDarkMode}
         selectedFacilityId={selectedFacilityId}
+        flyToCoords={flyToCoords}
         onSelectFacility={setSelectedFacilityId}
+        onResetSelection={() => {
+          setSelectedFacilityId(null);
+          setFlyToCoords(null);
+        }}
       />
       <Legend isDarkMode={isDarkMode} />
       <FacilityDetailPanel
@@ -486,114 +381,11 @@ export default function Home() {
         isDarkMode={isDarkMode}
         onClose={() => setSelectedFacilityId(null)}
       />
-      <SearchInput
-        query={query}
+      <ChatSidebar
         isDarkMode={isDarkMode}
-        onQueryChange={setQuery}
-        onSubmit={handleApplyQuery}
+        onSelectFacility={setSelectedFacilityId}
+        onFlyToLocation={(lat, lng) => setFlyToCoords([lat, lng])}
       />
-      <section
-        className={
-          isDarkMode
-            ? "absolute bottom-20 right-4 z-[1000] max-h-[55vh] w-[400px] overflow-auto rounded-xl border border-white/20 bg-slate-900/85 p-4 text-sm text-slate-100 shadow-2xl backdrop-blur-sm"
-            : "absolute bottom-20 right-4 z-[1000] max-h-[55vh] w-[400px] overflow-auto rounded-xl border border-slate-200 bg-white/95 p-4 text-sm text-slate-700 shadow-2xl backdrop-blur-sm"
-        }
-      >
-        {reasoningSteps.length === 0 && !recommendation && !isSubmittingQuery && (
-          <div className="space-y-2">
-            <p className={isDarkMode ? "text-slate-400 text-xs mb-3" : "text-slate-500 text-xs mb-3"}>
-              Ask a question or try one of these:
-            </p>
-            {suggestedQueries.map((sq) => (
-              <button
-                key={sq}
-                type="button"
-                className={
-                  isDarkMode
-                    ? "w-full rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-2.5 text-left text-xs text-cyan-300 hover:bg-cyan-500/20 transition-colors"
-                    : "w-full rounded-lg border border-cyan-600/30 bg-cyan-50 p-2.5 text-left text-xs text-cyan-700 hover:bg-cyan-100 transition-colors"
-                }
-                onClick={() => setQuery(sq)}
-              >
-                {sq}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {isSubmittingQuery && reasoningSteps.length === 0 && (
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
-            <p className={isDarkMode ? "text-cyan-300" : "text-cyan-700"}>Thinking...</p>
-          </div>
-        )}
-
-        {reasoningSteps.length > 0 && (
-          <div className="space-y-3">
-            {reasoningSteps.map((step, i) => (
-              <div
-                key={`step-${i}-${step.step}`}
-                className={
-                  step.step === "warning"
-                    ? isDarkMode
-                      ? "rounded-lg border border-red-500/30 bg-red-500/10 p-2.5"
-                      : "rounded-lg border border-red-300 bg-red-50 p-2.5"
-                    : step.step === "recommend"
-                      ? isDarkMode
-                        ? "rounded-lg border border-green-500/30 bg-green-500/10 p-2.5"
-                        : "rounded-lg border border-green-300 bg-green-50 p-2.5"
-                      : step.step === "human"
-                        ? "italic opacity-80 p-2.5"
-                        : isDarkMode
-                          ? "rounded-lg bg-slate-800/50 p-2.5"
-                          : "rounded-lg bg-slate-50 p-2.5"
-                }
-              >
-                <p className="text-xs leading-relaxed">{step.text}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {recommendation && (
-          <div
-            className={
-              isDarkMode
-                ? "mt-3 rounded-lg border-2 border-green-500/50 bg-green-500/10 p-3"
-                : "mt-3 rounded-lg border-2 border-green-500 bg-green-50 p-3"
-            }
-          >
-            <p className="font-bold text-sm">{recommendation.name}</p>
-            <p className="text-xs mt-1">
-              {recommendation.type} | {recommendation.state}, {recommendation.district}
-            </p>
-            <p className={isDarkMode ? "text-xs mt-1 text-green-300" : "text-xs mt-1 text-green-700"}>
-              Confidence: {Math.round(recommendation.trustMin * 100)}%
-            </p>
-            <p className="text-xs mt-1 opacity-80">{recommendation.reason}</p>
-          </div>
-        )}
-
-        {warnings.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {warnings.map((w) => (
-              <div
-                key={w.facilityId}
-                className={
-                  isDarkMode
-                    ? "rounded-lg border border-red-500/30 bg-red-500/5 p-2.5"
-                    : "rounded-lg border border-red-200 bg-red-50/50 p-2.5"
-                }
-              >
-                <p className="font-semibold text-xs">{w.name}</p>
-                <p className={isDarkMode ? "text-xs text-red-300" : "text-xs text-red-600"}>
-                  Confidence: {Math.round(w.trustMin * 100)}% — {w.reason}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
     </main>
   );
 }

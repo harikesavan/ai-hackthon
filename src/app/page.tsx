@@ -276,12 +276,6 @@ export default function Home() {
     fetchFilteredCards();
   }, [mapState.location.district, mapState.location.state]);
 
-  const handleCapabilityChange = (capability: MapState["capability"]) => {
-    setFlyToCoords(null);
-    setSelectedFacilityId(null);
-    setMapState((previous) => ({ ...previous, capability }));
-  };
-
   const handleLocationChange = (
     key: keyof MapState["location"],
     value: string,
@@ -372,7 +366,6 @@ export default function Home() {
         districts={districts}
         facilityCount={filteredFacilities.length}
         onViewChange={setView}
-        onCapabilityChange={handleCapabilityChange}
         onLocationChange={handleLocationChange}
         onTrustChange={handleTrustChange}
         onAvailabilityChange={handleAvailabilityChange}

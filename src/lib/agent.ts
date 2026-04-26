@@ -1,13 +1,17 @@
 import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { facilities } from "@/lib/db/schema";
-import { and, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import {
   SYSTEM_PROMPT,
   FOLLOWUP_PROMPT,
+  VALIDATOR_PROMPT,
+  REFINE_PROMPT,
   REASONING_MODEL,
   REASONING_FALLBACK,
   FOLLOWUP_MODEL,
+  VALIDATOR_MODEL,
+  REFINE_MODEL,
 } from "@/lib/prompts";
 
 export type AgentReasoningStep = { step: string; text: string };
@@ -282,6 +286,217 @@ async function generateFollowups(
   }
 }
 
+type ValidatorVerdict = {
+  appropriate: boolean;
+  confidence: "high" | "medium" | "low";
+  reasoning: string;
+  redFlags: string[];
+  betterMatchHint: string | null;
+};
+
+type CandidateForValidator = {
+  id: number;
+  name: string;
+  type: string | null;
+  district: string | null;
+  state: string | null;
+  services: string[] | null;
+  specialties: string[] | null;
+  rawNotes: string | null;
+};
+
+async function verifyCandidate(
+  query: string,
+  analysis: ConditionAnalysis,
+  candidate: CandidateForValidator,
+): Promise<ValidatorVerdict | null> {
+  const client = getOpenAI();
+  if (!client) return null;
+
+  const candidateBlock = [
+    `Facility name: ${candidate.name}`,
+    `Type: ${candidate.type ?? "unknown"}`,
+    `Location: ${candidate.district ?? "unknown"}, ${candidate.state ?? "unknown"}`,
+    `Specialties: ${
+      Array.isArray(candidate.specialties) ? candidate.specialties.join(", ") : "(none)"
+    }`,
+    `Services: ${
+      Array.isArray(candidate.services) ? candidate.services.slice(0, 25).join("; ") : "(none)"
+    }`,
+    `Raw notes: ${candidate.rawNotes?.slice(0, 1500) ?? "(empty)"}`,
+  ].join("\n");
+
+  const userBlock = [
+    `User query: "${query}"`,
+    `Identified condition: ${analysis.condition}`,
+    `Age group: ${analysis.ageGroup}`,
+    `Urgency: ${analysis.urgency}`,
+    `Specialty needed: ${analysis.specialtyLabels.join(" or ")}`,
+    "",
+    "Candidate facility:",
+    candidateBlock,
+    "",
+    "Decide whether this facility is appropriate for the user's condition. Return JSON.",
+  ].join("\n");
+
+  async function callModel(model: string) {
+    return client!.chat.completions.create({
+      model,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: VALIDATOR_PROMPT },
+        { role: "user", content: userBlock },
+      ],
+    });
+  }
+
+  let completion;
+  try {
+    completion = await callModel(VALIDATOR_MODEL);
+  } catch {
+    try {
+      completion = await callModel(REASONING_FALLBACK);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const text = completion.choices[0]?.message?.content;
+    if (!text) return null;
+    const parsed = JSON.parse(text) as Partial<ValidatorVerdict>;
+    return {
+      appropriate: parsed.appropriate === true,
+      confidence:
+        parsed.confidence === "high" || parsed.confidence === "medium" || parsed.confidence === "low"
+          ? parsed.confidence
+          : "low",
+      reasoning: typeof parsed.reasoning === "string" ? parsed.reasoning : "",
+      redFlags: Array.isArray(parsed.redFlags)
+        ? parsed.redFlags.filter((f): f is string => typeof f === "string")
+        : [],
+      betterMatchHint:
+        typeof parsed.betterMatchHint === "string" ? parsed.betterMatchHint : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function refineAnalysis(
+  query: string,
+  history: HistoryEntry[],
+  currentAnalysis: ConditionAnalysis,
+  rejectedSummaries: string[],
+  rejectedHints: string[],
+): Promise<ConditionAnalysis | null> {
+  const client = getOpenAI();
+  if (!client) return null;
+
+  const userBlock = [
+    `Original user query: "${query}"`,
+    "",
+    "Previous analysis the search engine used:",
+    JSON.stringify(
+      {
+        condition: currentAnalysis.condition,
+        ageGroup: currentAnalysis.ageGroup,
+        urgency: currentAnalysis.urgency,
+        coreSpecialtyTerms: currentAnalysis.coreSpecialtyTerms,
+        fallbackSpecialtyTerms: currentAnalysis.fallbackSpecialtyTerms,
+        specialtyLabels: currentAnalysis.specialtyLabels,
+        excludeKeywords: currentAnalysis.excludeKeywords,
+        preferredFacilityTypes: currentAnalysis.preferredFacilityTypes,
+        maxReasonableDistanceKm: currentAnalysis.maxReasonableDistanceKm,
+        state: currentAnalysis.state,
+        district: currentAnalysis.district,
+        pincode: currentAnalysis.pincode,
+      },
+      null,
+      2,
+    ),
+    "",
+    "Validator rejected the top candidates with these reasons:",
+    rejectedSummaries.map((r, i) => `${i + 1}. ${r}`).join("\n"),
+    "",
+    rejectedHints.length > 0
+      ? `Validator hints for better matches:\n${rejectedHints.map((h, i) => `${i + 1}. ${h}`).join("\n")}`
+      : "Validator did not suggest a specific alternative facility type.",
+    "",
+    "Refine the analysis. Return JSON.",
+  ].join("\n");
+
+  async function callModel(model: string) {
+    return client!.chat.completions.create({
+      model,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: REFINE_PROMPT },
+        ...history.slice(-4).map((entry) => ({
+          role: entry.role,
+          content: entry.content,
+        })),
+        { role: "user", content: userBlock },
+      ],
+    });
+  }
+
+  let completion;
+  try {
+    completion = await callModel(REFINE_MODEL);
+  } catch {
+    try {
+      completion = await callModel(REASONING_FALLBACK);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const text = completion.choices[0]?.message?.content;
+    if (!text) return null;
+    const parsed = JSON.parse(text) as Partial<ConditionAnalysis>;
+
+    const core = Array.isArray(parsed.coreSpecialtyTerms)
+      ? parsed.coreSpecialtyTerms.map((t) => String(t).toLowerCase()).filter(Boolean)
+      : currentAnalysis.coreSpecialtyTerms;
+    const fallback = Array.isArray(parsed.fallbackSpecialtyTerms)
+      ? parsed.fallbackSpecialtyTerms.map((t) => String(t).toLowerCase()).filter(Boolean)
+      : currentAnalysis.fallbackSpecialtyTerms;
+
+    return {
+      condition: parsed.condition || currentAnalysis.condition,
+      ageGroup: (parsed.ageGroup as ConditionAnalysis["ageGroup"]) || currentAnalysis.ageGroup,
+      urgency: (parsed.urgency as ConditionAnalysis["urgency"]) || currentAnalysis.urgency,
+      coreSpecialtyTerms: core.length > 0 ? core : currentAnalysis.coreSpecialtyTerms,
+      fallbackSpecialtyTerms: fallback,
+      specialtyLabels:
+        Array.isArray(parsed.specialtyLabels) && parsed.specialtyLabels.length > 0
+          ? parsed.specialtyLabels
+          : currentAnalysis.specialtyLabels,
+      excludeKeywords: Array.isArray(parsed.excludeKeywords)
+        ? parsed.excludeKeywords.map((t) => String(t).toLowerCase())
+        : currentAnalysis.excludeKeywords,
+      preferredFacilityTypes:
+        Array.isArray(parsed.preferredFacilityTypes) && parsed.preferredFacilityTypes.length > 0
+          ? parsed.preferredFacilityTypes
+          : currentAnalysis.preferredFacilityTypes,
+      maxReasonableDistanceKm:
+        typeof parsed.maxReasonableDistanceKm === "number" && parsed.maxReasonableDistanceKm > 0
+          ? Math.min(parsed.maxReasonableDistanceKm, 500)
+          : currentAnalysis.maxReasonableDistanceKm,
+      state: parsed.state ?? currentAnalysis.state,
+      district: parsed.district ?? currentAnalysis.district,
+      pincode: parsed.pincode ?? currentAnalysis.pincode,
+      rationale:
+        parsed.rationale ||
+        `Refined search based on validator feedback: ${rejectedHints[0] ?? "broaden specialty"}.`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -401,201 +616,390 @@ export async function streamAgent(
     text: `Location: ${resolvedDistrict ?? "any district"}, ${resolvedState ?? "any state"}${pincode ? ` (pincode ${pincode})` : ""}. Reasonable travel: ${analysis.maxReasonableDistanceKm} km.${avoidCities.length > 0 ? ` Avoiding: ${avoidCities.join(", ")}.` : ""}`,
   });
 
-  let rows = await searchFacilities(resolvedState, analysis.coreSpecialtyTerms);
-
-  if (rows.length === 0 && analysis.fallbackSpecialtyTerms.length > 0) {
-    emit("reasoning", {
-      step: "search",
-      text: `No matches for primary specialty ${analysis.specialtyLabels[0]}. Expanding to related specialties: ${analysis.fallbackSpecialtyTerms.join(", ")}.`,
-    });
-    rows = await searchFacilities(
-      resolvedState,
-      [...analysis.coreSpecialtyTerms, ...analysis.fallbackSpecialtyTerms],
-    );
-  } else {
-    emit("reasoning", {
-      step: "search",
-      text: `Searched database — ${rows.length} candidates matching ${analysis.specialtyLabels.join("/")}.`,
-    });
-  }
-
-  if (rows.length === 0 && resolvedState) {
-    emit("reasoning", {
-      step: "search",
-      text: `No specialty matches in ${resolvedState}. Broadening to all facilities in the state.`,
-    });
-    rows = await searchByStateOnly(resolvedState);
-  }
-
-  if (rows.length === 0) {
-    emit("reasoning", {
-      step: "warning",
-      text: "No facilities found. Try mentioning a specific city, pincode, or state.",
-    });
-    emit("done", {});
-    return;
-  }
-
-  const filtered = rows.filter((r) => {
-    if (r.lat === null || r.lon === null) return false;
-    if (avoidCities.length > 0) {
-      const district = (r.district ?? "").toLowerCase();
-      if (avoidCities.some((c) => district.includes(c))) return false;
-    }
-    return true;
-  });
-
-  const excludeMatch = (r: (typeof filtered)[number]): boolean => {
-    if (analysis.excludeKeywords.length === 0) return false;
-    const haystack = [
-      r.name,
-      r.type ?? "",
-      Array.isArray(r.services) ? r.services.join(" ") : "",
-      Array.isArray(r.specialties) ? r.specialties.join(" ") : "",
-    ]
-      .join(" ")
-      .toLowerCase();
-    return analysis.excludeKeywords.some((kw) => haystack.includes(kw));
-  };
-
-  const cleanCandidates = filtered.filter((r) => !excludeMatch(r));
-  const droppedCount = filtered.length - cleanCandidates.length;
-  if (droppedCount > 0) {
-    emit("reasoning", {
-      step: "filter",
-      text: `Filtered out ${droppedCount} facilities matching exclusion keywords (${analysis.excludeKeywords.join(", ")}) — wrong specialty for this condition.`,
-    });
-  }
-
-  const workingSet = cleanCandidates.length > 0 ? cleanCandidates : filtered;
-
-  type Scored = (typeof workingSet)[number] & {
+  type Scored = {
+    id: number;
+    name: string;
+    type: string | null;
+    state: string | null;
+    district: string | null;
+    lat: number | null;
+    lon: number | null;
+    trustMin: number | null;
+    services: string[] | null;
+    specialties: string[] | null;
     distance: number;
     score: number;
     typeBoost: number;
   };
 
-  const preferredTypeLowercase = analysis.preferredFacilityTypes.map((t) => t.toLowerCase());
+  type AttemptResult = {
+    candidates: Scored[];
+    radius: number;
+    droppedCount: number;
+    rowCount: number;
+    withinLimitCount: number;
+  };
 
-  const scored: Scored[] = workingSet
-    .map((r) => {
-      const distance =
-        centerLat !== null && centerLon !== null
-          ? distanceKm(centerLat, centerLon, r.lat as number, r.lon as number)
-          : 0;
-      const trust = r.trustMin ?? 0;
-      const distancePenalty =
-        centerLat !== null
-          ? distance > analysis.maxReasonableDistanceKm
-            ? 200 + distance
-            : (distance / analysis.maxReasonableDistanceKm) * 50
-          : 0;
-      const trustBonus = trust * 100;
-      const facilityType = (r.type ?? "").toLowerCase();
-      const typeBoost = preferredTypeLowercase.some((t) => facilityType.includes(t)) ? 15 : 0;
-      const score = trustBonus + typeBoost - distancePenalty;
-      return { ...r, distance, score, typeBoost };
-    })
-    .sort((a, b) => b.score - a.score);
+  const runSearchAndScore = async (
+    currentAnalysis: ConditionAnalysis,
+  ): Promise<AttemptResult> => {
+    let rows = await searchFacilities(resolvedState, currentAnalysis.coreSpecialtyTerms);
 
-  let radius = analysis.maxReasonableDistanceKm;
-  let withinLimit = scored.filter(
-    (s) => centerLat === null || s.distance <= radius,
-  );
-
-  if (centerLat !== null && withinLimit.length === 0) {
-    const expansionTiers = [radius * 1.5, radius * 2.5, radius * 4];
-    for (const newRadius of expansionTiers) {
+    if (rows.length === 0 && currentAnalysis.fallbackSpecialtyTerms.length > 0) {
       emit("reasoning", {
-        step: "expand",
-        text: `Nothing found within ${Math.round(radius)} km. Expanding search to ${Math.round(newRadius)} km radius…`,
+        step: "search",
+        text: `No matches for primary specialty ${currentAnalysis.specialtyLabels[0]}. Expanding to related specialties: ${currentAnalysis.fallbackSpecialtyTerms.join(", ")}.`,
       });
-      radius = newRadius;
-      withinLimit = scored.filter((s) => s.distance <= radius);
-      if (withinLimit.length > 0) {
+      rows = await searchFacilities(
+        resolvedState,
+        [...currentAnalysis.coreSpecialtyTerms, ...currentAnalysis.fallbackSpecialtyTerms],
+      );
+    } else {
+      emit("reasoning", {
+        step: "search",
+        text: `Searched database — ${rows.length} candidates matching ${currentAnalysis.specialtyLabels.join("/")}.`,
+      });
+    }
+
+    if (rows.length === 0 && resolvedState) {
+      emit("reasoning", {
+        step: "search",
+        text: `No specialty matches in ${resolvedState}. Broadening to all facilities in the state.`,
+      });
+      rows = await searchByStateOnly(resolvedState);
+    }
+
+    const filtered = rows.filter((r) => {
+      if (r.lat === null || r.lon === null) return false;
+      if (avoidCities.length > 0) {
+        const district = (r.district ?? "").toLowerCase();
+        if (avoidCities.some((c) => district.includes(c))) return false;
+      }
+      return true;
+    });
+
+    const excludeMatch = (r: (typeof filtered)[number]): boolean => {
+      if (currentAnalysis.excludeKeywords.length === 0) return false;
+      const haystack = [
+        r.name,
+        r.type ?? "",
+        Array.isArray(r.services) ? r.services.join(" ") : "",
+        Array.isArray(r.specialties) ? r.specialties.join(" ") : "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return currentAnalysis.excludeKeywords.some((kw) => haystack.includes(kw));
+    };
+
+    const cleanCandidates = filtered.filter((r) => !excludeMatch(r));
+    const droppedCount = filtered.length - cleanCandidates.length;
+    if (droppedCount > 0) {
+      emit("reasoning", {
+        step: "filter",
+        text: `Filtered out ${droppedCount} facilities matching exclusion keywords (${currentAnalysis.excludeKeywords.join(", ")}) — wrong specialty for this condition.`,
+      });
+    }
+
+    const workingSet = cleanCandidates.length > 0 ? cleanCandidates : filtered;
+    const preferredTypeLowercase = currentAnalysis.preferredFacilityTypes.map((t) => t.toLowerCase());
+
+    const scored: Scored[] = workingSet
+      .map((r) => {
+        const distance =
+          centerLat !== null && centerLon !== null
+            ? distanceKm(centerLat, centerLon, r.lat as number, r.lon as number)
+            : 0;
+        const trust = r.trustMin ?? 0;
+        const distancePenalty =
+          centerLat !== null
+            ? distance > currentAnalysis.maxReasonableDistanceKm
+              ? 200 + distance
+              : (distance / currentAnalysis.maxReasonableDistanceKm) * 50
+            : 0;
+        const trustBonus = trust * 100;
+        const facilityType = (r.type ?? "").toLowerCase();
+        const typeBoost = preferredTypeLowercase.some((t) => facilityType.includes(t)) ? 15 : 0;
+        const score = trustBonus + typeBoost - distancePenalty;
+        return {
+          id: r.id,
+          name: r.name,
+          type: r.type ?? null,
+          state: r.state ?? null,
+          district: r.district ?? null,
+          lat: r.lat ?? null,
+          lon: r.lon ?? null,
+          trustMin: r.trustMin ?? null,
+          services: r.services ?? null,
+          specialties: r.specialties ?? null,
+          distance,
+          score,
+          typeBoost,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    let radius = currentAnalysis.maxReasonableDistanceKm;
+    let withinLimit = scored.filter((s) => centerLat === null || s.distance <= radius);
+
+    if (centerLat !== null && withinLimit.length === 0) {
+      const expansionTiers = [radius * 1.5, radius * 2.5, radius * 4];
+      for (const newRadius of expansionTiers) {
         emit("reasoning", {
           step: "expand",
-          text: `Found ${withinLimit.length} facilities within ${Math.round(radius)} km after expansion.`,
+          text: `Nothing found within ${Math.round(radius)} km. Expanding search to ${Math.round(newRadius)} km radius…`,
+        });
+        radius = newRadius;
+        withinLimit = scored.filter((s) => s.distance <= radius);
+        if (withinLimit.length > 0) {
+          emit("reasoning", {
+            step: "expand",
+            text: `Found ${withinLimit.length} facilities within ${Math.round(radius)} km after expansion.`,
+          });
+          break;
+        }
+      }
+    }
+
+    if (centerLat !== null) {
+      emit("reasoning", {
+        step: "score",
+        text: `${withinLimit.length} within ${Math.round(radius)} km. Scoring by trust, distance, and facility type fit.`,
+      });
+    }
+
+    return {
+      candidates: withinLimit.length > 0 ? withinLimit : scored,
+      radius,
+      droppedCount,
+      rowCount: rows.length,
+      withinLimitCount: withinLimit.length,
+    };
+  };
+
+  let effectiveAnalysis = analysis;
+  let verifiedBest: Scored | null = null;
+  let verifiedVerdict: ValidatorVerdict | null = null;
+  let lastAttemptResult: AttemptResult | null = null;
+  let lastRejectedVerdicts: { cand: Scored; verdict: ValidatorVerdict }[] = [];
+  let lastRejectedHints: string[] = [];
+  const allWarnings: AgentWarning[] = [];
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    if (attempt > 1) {
+      emit("reasoning", {
+        step: "refine",
+        text: `Attempt ${attempt} of 3 — refining search criteria from validator feedback.`,
+      });
+      const refined = await refineAnalysis(
+        query,
+        history,
+        effectiveAnalysis,
+        lastRejectedVerdicts.map((rv) => `${rv.cand.name}: ${rv.verdict.reasoning}`),
+        lastRejectedHints,
+      );
+      if (!refined) {
+        emit("reasoning", {
+          step: "refine",
+          text: "Could not refine analysis. Falling back to previous best candidate.",
         });
         break;
       }
+      effectiveAnalysis = refined;
+      emit("reasoning", {
+        step: "refine",
+        text: `New plan: specialty=${refined.specialtyLabels.join("/")}, exclude=${refined.excludeKeywords.length} terms, radius=${refined.maxReasonableDistanceKm}km. ${refined.rationale}`,
+      });
+    } else {
+      emit("reasoning", {
+        step: "search",
+        text: `Attempt 1 of 3 — searching with primary specialty ${effectiveAnalysis.specialtyLabels.join("/")}.`,
+      });
+    }
+
+    const result = await runSearchAndScore(effectiveAnalysis);
+    lastAttemptResult = result;
+
+    if (result.candidates.length === 0) {
+      emit("reasoning", {
+        step: "warning",
+        text: "No candidates passed scoring. Trying refinement.",
+      });
+      lastRejectedVerdicts = [];
+      lastRejectedHints = [];
+      continue;
+    }
+
+    const lowTrust = result.candidates.filter((r) => (r.trustMin ?? 0) < 0.4).slice(0, 3);
+    if (attempt === 1 && lowTrust.length > 0) {
+      const lowTrustWarnings: AgentWarning[] = lowTrust.map((r) => ({
+        facilityId: r.id,
+        name: r.name,
+        lat: r.lat ?? undefined,
+        lon: r.lon ?? undefined,
+        trustMin: r.trustMin ?? 0,
+        reason: `Low trust score (${Math.round((r.trustMin ?? 0) * 100)}%) — verify before using.`,
+      }));
+      allWarnings.push(...lowTrustWarnings);
+      emit("reasoning", {
+        step: "warning",
+        text: `Flagged ${lowTrust.length} low-trust facilities to avoid.`,
+      });
+    }
+
+    emit("reasoning", {
+      step: "verify",
+      text: `Running second-opinion verifier on top ${Math.min(3, result.candidates.length)} candidates — reading raw notes against the user's actual condition.`,
+    });
+
+    const rejectedThisAttempt: { cand: Scored; verdict: ValidatorVerdict }[] = [];
+    const hintsThisAttempt: string[] = [];
+    let approvedThisAttempt: { cand: Scored; verdict: ValidatorVerdict | null } | null = null;
+
+    for (const cand of result.candidates.slice(0, 3)) {
+      const candFull = await db
+        .select({
+          id: facilities.id,
+          services: facilities.services,
+          specialties: facilities.specialties,
+          rawNotes: facilities.rawNotes,
+        })
+        .from(facilities)
+        .where(eq(facilities.id, cand.id))
+        .limit(1);
+
+      const fullData = candFull[0];
+      const verdict = await verifyCandidate(query, effectiveAnalysis, {
+        id: cand.id,
+        name: cand.name,
+        type: cand.type,
+        district: cand.district,
+        state: cand.state,
+        services: fullData?.services ?? cand.services,
+        specialties: fullData?.specialties ?? cand.specialties,
+        rawNotes: fullData?.rawNotes ?? null,
+      });
+
+      if (!verdict) {
+        approvedThisAttempt = { cand, verdict: null };
+        break;
+      }
+      if (verdict.appropriate) {
+        emit("reasoning", {
+          step: "verify",
+          text: `Verifier approved ${cand.name}: ${verdict.reasoning}`,
+        });
+        approvedThisAttempt = { cand, verdict };
+        break;
+      }
+      const flagsLabel = verdict.redFlags.length > 0 ? ` [${verdict.redFlags.join(", ")}]` : "";
+      emit("reasoning", {
+        step: "warning",
+        text: `Verifier rejected ${cand.name}${flagsLabel}: ${verdict.reasoning}`,
+      });
+      rejectedThisAttempt.push({ cand, verdict });
+      if (verdict.betterMatchHint && !hintsThisAttempt.includes(verdict.betterMatchHint)) {
+        hintsThisAttempt.push(verdict.betterMatchHint);
+      }
+    }
+
+    if (approvedThisAttempt) {
+      verifiedBest = approvedThisAttempt.cand;
+      verifiedVerdict = approvedThisAttempt.verdict;
+      break;
+    }
+
+    lastRejectedVerdicts = rejectedThisAttempt;
+    lastRejectedHints = hintsThisAttempt;
+
+    if (attempt === 3) {
+      emit("reasoning", {
+        step: "verify",
+        text: `All 3 attempts exhausted (${rejectedThisAttempt.length} candidates rejected this round). Falling back to best available with explicit warnings — do not treat as a verified match.`,
+      });
     }
   }
 
-  if (centerLat !== null) {
-    emit("reasoning", {
-      step: "score",
-      text: `${withinLimit.length} within ${Math.round(radius)} km. Scoring by trust, distance, and facility type fit.`,
+  if (!verifiedBest && lastRejectedVerdicts.length > 0) {
+    const fallback = lastRejectedVerdicts[0];
+    verifiedBest = fallback.cand;
+    verifiedVerdict = fallback.verdict;
+    allWarnings.push({
+      facilityId: fallback.cand.id,
+      name: fallback.cand.name,
+      lat: fallback.cand.lat ?? undefined,
+      lon: fallback.cand.lon ?? undefined,
+      trustMin: fallback.cand.trustMin ?? 0,
+      reason: `Verifier flagged after ${3} refinement attempts: ${fallback.verdict.reasoning}${
+        lastRejectedHints.length > 0 ? ` Suggested alternative: ${lastRejectedHints[0]}.` : ""
+      }`,
     });
   }
 
-  const candidates = withinLimit.length > 0 ? withinLimit : scored;
-  const best = candidates[0];
+  if (!verifiedBest && lastAttemptResult && lastAttemptResult.candidates.length > 0) {
+    verifiedBest = lastAttemptResult.candidates[0];
+  }
 
-  if (!best) {
+  if (!verifiedBest) {
+    emit("reasoning", {
+      step: "error",
+      text: "No facilities found across all 3 attempts. Try mentioning a specific city, pincode, or state.",
+    });
     emit("done", {});
     return;
   }
 
-  if (withinLimit.length === 0 && centerLat !== null) {
-    emit("reasoning", {
-      step: "warning",
-      text: `No facility found near you even after expanding search. Closest match is ${Math.round(best.distance)} km away — consider asking for a different location.`,
-    });
-  } else if (
+  if (allWarnings.length > 0) {
+    emit("warnings", allWarnings);
+  }
+
+  const candidates = lastAttemptResult?.candidates ?? [];
+  const radius = lastAttemptResult?.radius ?? effectiveAnalysis.maxReasonableDistanceKm;
+
+  if (
     centerLat !== null &&
-    radius > analysis.maxReasonableDistanceKm &&
-    best.distance > analysis.maxReasonableDistanceKm
+    radius > effectiveAnalysis.maxReasonableDistanceKm &&
+    verifiedBest.distance > effectiveAnalysis.maxReasonableDistanceKm
   ) {
     emit("reasoning", {
       step: "warning",
-      text: `Best match is ${Math.round(best.distance)} km away — beyond the ideal ${analysis.maxReasonableDistanceKm} km for this condition. Consider whether travel is practical.`,
+      text: `Best match is ${Math.round(verifiedBest.distance)} km away — beyond the ideal ${effectiveAnalysis.maxReasonableDistanceKm} km for this condition. Consider whether travel is practical.`,
     });
   }
 
-  const lowTrust = candidates.filter((r) => (r.trustMin ?? 0) < 0.4).slice(0, 3);
-  const warnings: AgentWarning[] = lowTrust.map((r) => ({
-    facilityId: r.id,
-    name: r.name,
-    lat: r.lat ?? undefined,
-    lon: r.lon ?? undefined,
-    trustMin: r.trustMin ?? 0,
-    reason: `Low trust score (${Math.round((r.trustMin ?? 0) * 100)}%) — verify before using.`,
-  }));
-
-  if (warnings.length > 0) {
-    emit("reasoning", {
-      step: "warning",
-      text: `Flagged ${warnings.length} low-trust facilities to avoid.`,
-    });
-    emit("warnings", warnings);
-  }
+  const final = verifiedBest;
+  const warnings = allWarnings;
 
   emit("reasoning", {
     step: "recommend",
     text:
       centerLat !== null
-        ? `Best match: ${best.name} (${best.type ?? "facility"}) in ${best.district ?? best.state} — ${Math.round(best.distance)} km away, ${Math.round((best.trustMin ?? 0) * 100)}% trust.`
-        : `Best match: ${best.name} in ${best.district ?? best.state} with ${Math.round((best.trustMin ?? 0) * 100)}% trust.`,
+        ? `Best match: ${final.name} (${final.type ?? "facility"}) in ${final.district ?? final.state} — ${Math.round(final.distance)} km away, ${Math.round((final.trustMin ?? 0) * 100)}% trust.`
+        : `Best match: ${final.name} in ${final.district ?? final.state} with ${Math.round((final.trustMin ?? 0) * 100)}% trust.`,
   });
 
+  const verifierReasonSuffix = verifiedVerdict?.reasoning
+    ? ` Verifier (${verifiedVerdict.confidence}): ${verifiedVerdict.reasoning}`
+    : "";
+
   const recommendation: AgentRecommendation = {
-    facilityId: best.id,
-    name: best.name,
-    type: best.type ?? undefined,
-    district: best.district ?? undefined,
-    state: best.state ?? undefined,
-    lat: best.lat as number,
-    lon: best.lon as number,
-    trustMin: best.trustMin ?? 0,
+    facilityId: final.id,
+    name: final.name,
+    type: final.type ?? undefined,
+    district: final.district ?? undefined,
+    state: final.state ?? undefined,
+    lat: final.lat as number,
+    lon: final.lon as number,
+    trustMin: final.trustMin ?? 0,
     reason:
       centerLat !== null
-        ? `${Math.round(best.distance)} km from you with ${Math.round((best.trustMin ?? 0) * 100)}% trust. Suitable for ${analysis.condition}.`
-        : `Highest trust facility for ${analysis.specialtyLabels[0]} in ${best.state}.`,
+        ? `${Math.round(final.distance)} km from you with ${Math.round((final.trustMin ?? 0) * 100)}% trust. Suitable for ${effectiveAnalysis.condition}.${verifierReasonSuffix}`
+        : `Highest trust facility for ${effectiveAnalysis.specialtyLabels[0]} in ${final.state}.${verifierReasonSuffix}`,
   };
   emit("recommendation", recommendation);
 
-  const alternativeRows = candidates.slice(1, 4).filter((r) => r.id !== best.id);
+  const alternativeRows = candidates
+    .filter((r) => r.id !== final.id)
+    .slice(0, 3);
   if (alternativeRows.length > 0) {
     emit("reasoning", {
       step: "alternatives",
@@ -610,7 +1014,7 @@ export async function streamAgent(
     highlightRed: warnings.map((w) => w.facilityId),
   });
 
-  const followups = await generateFollowups(query, recommendation, analysis, history);
+  const followups = await generateFollowups(query, recommendation, effectiveAnalysis, history);
   if (followups.length > 0) {
     emit("followup", { questions: followups });
   }

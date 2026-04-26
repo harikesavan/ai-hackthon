@@ -119,8 +119,8 @@ export const FacilityDetailPanel = ({
   const badgeClasses = statusBadgeClasses[capabilityStatus][isDarkMode ? "dark" : "light"];
   const dividerClasses = isDarkMode ? "border-t border-white/10 my-3" : "border-t border-slate-200 my-3";
   const panelClasses = isDarkMode
-    ? "absolute left-4 top-20 z-[1000] w-[360px] max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/90 p-5 text-sm text-slate-200 shadow-2xl"
-    : "absolute left-4 top-20 z-[1000] w-[360px] max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl border border-slate-200/50 bg-white/95 p-5 text-sm text-slate-700 shadow-2xl";
+    ? "absolute left-4 top-24 z-[900] w-[360px] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/90 p-5 text-sm text-slate-200 shadow-2xl"
+    : "absolute left-4 top-24 z-[900] w-[360px] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-slate-200/50 bg-white/95 p-5 text-sm text-slate-700 shadow-2xl";
   const closeButtonClassName = isDarkMode
     ? "flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
     : "flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40";

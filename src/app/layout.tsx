@@ -15,6 +15,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Agentic Healthcare Map",
   description: "Ventusky-like healthcare capacity interface",
+  manifest: "/site.webmanifest?v=4",
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png?v=4", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png?v=4", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.ico?v=4", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png?v=4", sizes: "180x180" }],
+    shortcut: ["/favicon.ico?v=4"],
+  },
 };
 
 export default function RootLayout({
